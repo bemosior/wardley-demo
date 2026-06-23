@@ -43,11 +43,6 @@ export function createTargetMarker(node: DemoNode): SVGGElement {
   shape.classList.add("wd-target-marker-shape");
   g.appendChild(shape);
 
-  const label = document.createElementNS(SVG_NS, "text");
-  label.classList.add("wd-target-marker-label");
-  label.textContent = node.label;
-  g.appendChild(label);
-
   return g;
 }
 

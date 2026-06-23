@@ -73,16 +73,6 @@ const CSS = `
   animation: wd-target-marker-dash 1.2s linear infinite;
 }
 
-.wd-target-marker-label {
-  font-family: var(--wd-font-ui);
-  font-size: 14px;
-  fill: #999;
-  text-anchor: middle;
-  dominant-baseline: middle;
-  pointer-events: none;
-  user-select: none;
-}
-
 @keyframes wd-target-marker-dash {
   to { stroke-dashoffset: -10; }
 }
