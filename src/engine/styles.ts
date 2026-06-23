@@ -11,12 +11,15 @@ const CSS = `
   --wd-font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   display: block;
   width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 .wardley-demo-root svg {
   display: block;
   width: 100%;
   height: auto;
+  overflow: visible;
 }
 
 .wd-node-shape {
