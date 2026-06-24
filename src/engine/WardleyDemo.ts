@@ -1,5 +1,5 @@
 import type { DemoConfig } from "../types";
-import { createConnectionLine, createNodeGroup, createSvgRoot, createTargetMarker } from "./render";
+import { createConnectionLine, createFlowLine, createNodeGroup, createSvgRoot, createTargetMarker } from "./render";
 import { injectStylesOnce } from "./styles";
 import { attachDrag, type ConnectedLine, type RevealTarget } from "./drag";
 
@@ -7,6 +7,9 @@ export interface MountOptions {
   /** an external element (e.g. a toolbox slot) that the draggable node must be picked up from */
   dragHandle?: HTMLElement;
 }
+
+/** negative delay so the User<-Need segment stays permanently phase-shifted behind the lead (Dependency<-Need) segments */
+const FLOW_STAGGER_DELAY = "-0.47s";
 
 export class WardleyDemo {
   private container: HTMLElement;
@@ -27,6 +30,7 @@ export class WardleyDemo {
 
     const nodesById = new Map(config.nodes.map((n) => [n.id, n]));
     const nodeGroups = new Map(config.nodes.map((n) => [n.id, createNodeGroup(n)]));
+    const firstNodeGroup = nodeGroups.values().next().value ?? null;
 
     const lines = config.connections.map((conn) => ({
       conn,
@@ -78,6 +82,15 @@ export class WardleyDemo {
               el.classList.add("wd-line--active");
             }
             targetMarker?.classList.add("wd-target-marker--hidden");
+
+            config.connections.forEach((conn, index) => {
+              const flowLine = createFlowLine(conn, nodesById);
+              if (index === 0) {
+                flowLine.style.animationDelay = FLOW_STAGGER_DELAY;
+              }
+              this.svg.insertBefore(flowLine, firstNodeGroup);
+            });
+
             config.onComplete?.();
           },
         },

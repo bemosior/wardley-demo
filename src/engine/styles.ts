@@ -8,6 +8,7 @@ const CSS = `
   --wd-color-border: #e5e5e5;
   --wd-color-bg-soft: #f5f5f5;
   --wd-color-stage-3: #2d6648;
+  --wd-color-flow: #7ec8ff;
   --wd-font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   display: block;
   width: 100%;
@@ -95,6 +96,21 @@ const CSS = `
 .wd-line--active:nth-of-type(2) { transition-delay: 0.08s; }
 .wd-line--active:nth-of-type(3) { transition-delay: 0.16s; }
 
+.wd-flow-line {
+  fill: none;
+  stroke: var(--wd-color-flow, #7ec8ff);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 6 18;
+  opacity: 0.9;
+  pointer-events: none;
+  animation: wd-flow-dash 1.4s linear infinite;
+}
+
+@keyframes wd-flow-dash {
+  to { stroke-dashoffset: 24; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wd-node--beckon .wd-node-shape {
     animation: none;
@@ -105,6 +121,9 @@ const CSS = `
   .wd-line--active {
     transition-duration: 0.01s;
     transition-delay: 0s !important;
+  }
+  .wd-flow-line {
+    display: none;
   }
 }
 `;
