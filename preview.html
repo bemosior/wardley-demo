@@ -164,11 +164,11 @@
                 <span class="wd-toolbox-slot-label">Who It's For</span>
               </div>
               <div class="wd-toolbox-slot wd-toolbox-slot--active" title="Drag this onto the canvas">
-                <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" /><text x="32" y="33">Need</text></svg>
+                <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" /><text x="32" y="33">User Need</text></svg>
                 <span class="wd-toolbox-slot-label">What They Get</span>
               </div>
               <div class="wd-toolbox-slot" title="Not available yet">
-                <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" /><text x="32" y="33">Dependency</text></svg>
+                <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" /><text x="32" y="33">Capability</text></svg>
                 <span class="wd-toolbox-slot-label">How They Get It</span>
               </div>
             </aside>
@@ -185,9 +185,9 @@
         snapThreshold: 30,
         nodes: [
           { id: "user", label: "User", x: 200, y: 82, draggable: false },
-          { id: "need", label: "Need", x: 200, y: 237, draggable: true, start: { x: 25, y: 237 } },
-          { id: "dependency-1", label: "Dependency", x: 130, y: 392, draggable: false },
-          { id: "dependency-2", label: "Dependency", x: 270, y: 392, draggable: false },
+          { id: "need", label: "User Need", x: 200, y: 237, draggable: true, start: { x: 25, y: 237 } },
+          { id: "dependency-1", label: "Capability X", x: 130, y: 392, draggable: false },
+          { id: "dependency-2", label: "Capability Y", x: 270, y: 392, draggable: false },
         ],
         connections: [
           { from: "user", to: "need" },
