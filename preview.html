@@ -174,23 +174,6 @@
             </aside>
             <div id="demo-a" class="wd-canvas"></div>
           </div>
-          <div class="wd-instance">
-            <aside class="wd-toolbox">
-              <div class="wd-toolbox-slot" title="Not available yet">
-                <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" /><text x="32" y="33">User</text></svg>
-                <span class="wd-toolbox-slot-label">Who It's For</span>
-              </div>
-              <div class="wd-toolbox-slot wd-toolbox-slot--active" title="Drag this onto the canvas">
-                <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" /><text x="32" y="33">Need</text></svg>
-                <span class="wd-toolbox-slot-label">What They Get</span>
-              </div>
-              <div class="wd-toolbox-slot" title="Not available yet">
-                <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" /><text x="32" y="33">Dependency</text></svg>
-                <span class="wd-toolbox-slot-label">How They Get It</span>
-              </div>
-            </aside>
-            <div id="demo-b" class="wd-canvas"></div>
-          </div>
         </div>
       </div>
     </section>
@@ -213,12 +196,8 @@
         ],
       };
 
-      var instances = document.querySelectorAll(".wd-instance");
       WardleyDemo.mount(document.getElementById("demo-a"), config, {
-        dragHandle: instances[0].querySelector(".wd-toolbox-slot--active"),
-      });
-      WardleyDemo.mount(document.getElementById("demo-b"), JSON.parse(JSON.stringify(config)), {
-        dragHandle: instances[1].querySelector(".wd-toolbox-slot--active"),
+        dragHandle: document.querySelector(".wd-toolbox-slot--active"),
       });
     </script>
   </body>
