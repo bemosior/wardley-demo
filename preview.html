@@ -196,9 +196,13 @@
         ],
       };
 
-      WardleyDemo.mount(document.getElementById("demo-a"), config, {
-        dragHandle: document.querySelector(".wd-toolbox-slot--active"),
-      });
+      var dragHandle = document.querySelector(".wd-toolbox-slot--active");
+      config.onComplete = function () {
+        dragHandle.classList.remove("wd-toolbox-slot--active");
+        dragHandle.title = "Not available yet";
+      };
+
+      WardleyDemo.mount(document.getElementById("demo-a"), config, { dragHandle: dragHandle });
     </script>
   </body>
 </html>

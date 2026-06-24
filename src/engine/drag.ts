@@ -79,6 +79,7 @@ export function attachDrag(options: DragOptions, snapThreshold: number): void {
   const triggerElement: HTMLElement | SVGGElement = externalHandle ?? nodeGroup;
 
   let currentPos: Point = { ...startPos };
+  let completed = false;
 
   function onPointerMove(event: PointerEvent): void {
     currentPos = toSvgPoint(svg, event.clientX, event.clientY);
@@ -108,6 +109,7 @@ export function attachDrag(options: DragOptions, snapThreshold: number): void {
       () => {
         currentPos = destination;
         if (snapped) {
+          completed = true;
           clearRevealOverride(revealTargets);
           onSnapSuccess();
         } else if (externalHandle) {
@@ -118,6 +120,7 @@ export function attachDrag(options: DragOptions, snapThreshold: number): void {
   }
 
   triggerElement.addEventListener("pointerdown", ((event: PointerEvent) => {
+    if (completed) return;
     nodeGroup.classList.remove("wd-node--beckon");
     triggerElement.setPointerCapture(event.pointerId);
 

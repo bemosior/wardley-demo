@@ -124,9 +124,18 @@
 
     <script type="module">
       import WardleyDemo from "/src/index.ts";
-      WardleyDemo.mount(document.getElementById("demo"), WardleyDemo.demos.userNeedDependency, {
-        dragHandle: document.querySelector(".wd-toolbox-slot--active"),
-      });
+      const dragHandle = document.querySelector(".wd-toolbox-slot--active");
+      WardleyDemo.mount(
+        document.getElementById("demo"),
+        {
+          ...WardleyDemo.demos.userNeedDependency,
+          onComplete: () => {
+            dragHandle.classList.remove("wd-toolbox-slot--active");
+            dragHandle.title = "Not available yet";
+          },
+        },
+        { dragHandle },
+      );
     </script>
   </body>
 </html>
