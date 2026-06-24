@@ -112,35 +112,49 @@ export function createFlowParticles(
   return particles;
 }
 
-const FIREWORK_PARTICLE_COUNT = 14;
-const FIREWORK_COLOR_CLASSES = ["wd-firework-particle--a", "wd-firework-particle--b", "wd-firework-particle--c"];
+const FIREWORK_SHELL_COUNT = 3;
+const FIREWORK_SPARKS_PER_SHELL = 24;
+const FIREWORK_COLORS = ["#f4b942", "#ff6b6b", "#005f99", "#7ec8ff", "#ffffff"];
+
+/** comma-separated box-shadow list: one dot per angle, all at the same `spread` distance from center */
+function buildSparkShadowList(angles: number[], spread: number): string {
+  return angles
+    .map((angle, i) => {
+      const dx = Math.cos(angle) * spread;
+      const dy = Math.sin(angle) * spread;
+      const color = FIREWORK_COLORS[i % FIREWORK_COLORS.length];
+      return `${dx.toFixed(1)}px ${dy.toFixed(1)}px 0 1px ${color}`;
+    })
+    .join(", ");
+}
 
 /**
- * one-shot celebratory burst centered on (x, y): returns a single <g> containing
- * FIREWORK_PARTICLE_COUNT small circles, each animating outward to a randomized
- * angle/distance via a CSS custom property and fading out. Caller appends it once
- * (on top of everything else) and is responsible for removing it once finished.
+ * one-shot celebratory firework: returns FIREWORK_SHELL_COUNT plain <div> "shells", each
+ * positioned (via CSS left/top in pixels, relative to whatever positioned ancestor the
+ * caller appends them into) near (pxX, pxY). Each shell is a single tiny element whose
+ * box-shadow list animates from a tightly clustered set of dots to a spread-out set with
+ * the same count/order, so the browser interpolates every dot's position+color smoothly —
+ * the classic CSS "box-shadow particle burst" technique, giving a rich multi-spark explosion
+ * from one DOM node per shell rather than one node per spark. Caller appends them once (on
+ * top of everything else) and is responsible for removing them when done.
  */
-export function createFireworkBurst(x: number, y: number): SVGGElement {
-  const g = document.createElementNS(SVG_NS, "g") as SVGGElement;
-  g.classList.add("wd-firework");
-  g.setAttribute("transform", `translate(${x}, ${y})`);
+export function createFireworkShells(pxX: number, pxY: number): HTMLDivElement[] {
+  const shells: HTMLDivElement[] = [];
+  for (let s = 0; s < FIREWORK_SHELL_COUNT; s++) {
+    const shell = document.createElement("div");
+    shell.className = "wd-firework-shell";
+    shell.style.left = `${pxX + (Math.random() * 24 - 12)}px`;
+    shell.style.top = `${pxY + (Math.random() * 24 - 12)}px`;
 
-  for (let i = 0; i < FIREWORK_PARTICLE_COUNT; i++) {
-    const angle = (i / FIREWORK_PARTICLE_COUNT) * 360 + (Math.random() * 16 - 8);
-    const distance = 32 + Math.random() * 26;
-    const radians = (angle * Math.PI) / 180;
-    const dx = Math.cos(radians) * distance;
-    const dy = Math.sin(radians) * distance;
-
-    const particle = document.createElementNS(SVG_NS, "circle") as SVGCircleElement;
-    particle.classList.add("wd-firework-particle", FIREWORK_COLOR_CLASSES[i % FIREWORK_COLOR_CLASSES.length]);
-    particle.setAttribute("r", "2.5");
-    particle.style.setProperty("--wd-fw-dx", `${dx}`);
-    particle.style.setProperty("--wd-fw-dy", `${dy}`);
-    particle.style.animationDelay = `${Math.random() * 0.1}s`;
-    g.appendChild(particle);
+    const angles = Array.from(
+      { length: FIREWORK_SPARKS_PER_SHELL },
+      (_, i) => (i / FIREWORK_SPARKS_PER_SHELL) * Math.PI * 2 + (Math.random() * 0.3 - 0.15),
+    );
+    const finalSpread = 26 + Math.random() * 14;
+    shell.style.setProperty("--wd-fw-start", buildSparkShadowList(angles, 2));
+    shell.style.setProperty("--wd-fw-end", buildSparkShadowList(angles, finalSpread));
+    shell.style.animationDelay = `${s * 0.18}s`;
+    shells.push(shell);
   }
-
-  return g;
+  return shells;
 }

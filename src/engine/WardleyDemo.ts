@@ -1,7 +1,7 @@
 import type { DemoConfig } from "../types";
 import {
   createConnectionLine,
-  createFireworkBurst,
+  createFireworkShells,
   createFlowParticles,
   createNodeGroup,
   createSvgRoot,
@@ -27,8 +27,8 @@ const FLOW_STAGGER_DELAY = -0.47;
 /** delay so the root node's idle "charged" glow stays permanently phase-shifted behind the draggable node's */
 const CHARGED_STAGGER_DELAY = "0.4s";
 
-/** firework particle animation is 0.9s plus up to 0.1s random per-particle delay; pad slightly before cleanup */
-const FIREWORK_CLEANUP_MS = 1100;
+/** firework shell animation is 1.1s plus up to ~0.36s shell stagger; pad before cleanup */
+const FIREWORK_CLEANUP_MS = 1700;
 
 export class WardleyDemo {
   private container: HTMLElement;
@@ -129,9 +129,21 @@ export class WardleyDemo {
               });
             });
 
-            const firework = createFireworkBurst(draggableNode.x, draggableNode.y);
-            this.svg.appendChild(firework);
-            setTimeout(() => firework.remove(), FIREWORK_CLEANUP_MS);
+            const svgRect = this.svg.getBoundingClientRect();
+            const containerRect = this.container.getBoundingClientRect();
+            const scaleX = svgRect.width / config.viewBox.width;
+            const scaleY = svgRect.height / config.viewBox.height;
+            const pxX = svgRect.left - containerRect.left + draggableNode.x * scaleX;
+            const pxY = svgRect.top - containerRect.top + draggableNode.y * scaleY;
+            const shells = createFireworkShells(pxX, pxY);
+            for (const shell of shells) {
+              this.container.appendChild(shell);
+            }
+            setTimeout(() => {
+              for (const shell of shells) {
+                shell.remove();
+              }
+            }, FIREWORK_CLEANUP_MS);
 
             config.onComplete?.();
           },
