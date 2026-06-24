@@ -1,8 +1,9 @@
-import type { DemoConfig } from "./types";
+import type { DemoConfig, DemoConnection, DemoNode } from "./types";
 import {
   createConnectionLine,
   createFireworkShells,
   createFlowParticles,
+  createLayer,
   createNodeGroup,
   createSvgRoot,
   createTargetMarker,
@@ -14,6 +15,15 @@ import { attachDrag, type ConnectedLine, type RevealTarget } from "./drag";
 export interface MountOptions {
   /** an external element (e.g. a toolbox slot) that the draggable node must be picked up from */
   dragHandle?: HTMLElement;
+}
+
+export interface DragStepOptions {
+  snapThreshold: number;
+  /** an external element (e.g. a toolbox slot) that the node must be picked up from */
+  dragHandle?: HTMLElement;
+  /** id of the node whose "charged" glow and lead flow-particle delay should sync with this step's snap */
+  rootNodeId?: string;
+  onComplete?: () => void;
 }
 
 const FLOW_PARTICLE_COUNT = 3;
@@ -33,6 +43,17 @@ const FIREWORK_CLEANUP_MS = 1700;
 export class WardleyDemo {
   private container: HTMLElement;
   private svg: SVGSVGElement;
+  private viewBox: { width: number; height: number };
+
+  /** fixed z-order, bottom to top: target markers, connection lines, flow particles, node groups */
+  private markerLayer: SVGGElement;
+  private lineLayer: SVGGElement;
+  private particleLayer: SVGGElement;
+  private nodeLayer: SVGGElement;
+
+  private nodesById = new Map<string, DemoNode>();
+  private nodeGroups = new Map<string, SVGGElement>();
+  private lines: { conn: DemoConnection; el: SVGLineElement }[] = [];
 
   static mount(container: HTMLElement, config: DemoConfig, options?: MountOptions): WardleyDemo {
     return new WardleyDemo(container, config, options);
@@ -43,114 +64,152 @@ export class WardleyDemo {
 
     this.container = container;
     this.container.classList.add("wardley-demo-root");
+    this.viewBox = config.viewBox;
 
     this.svg = createSvgRoot(config.viewBox);
     this.container.appendChild(this.svg);
 
-    const nodesById = new Map(config.nodes.map((n) => [n.id, n]));
-    const nodeGroups = new Map(config.nodes.map((n) => [n.id, createNodeGroup(n)]));
-    const firstNodeGroup = nodeGroups.values().next().value ?? null;
+    this.markerLayer = createLayer();
+    this.lineLayer = createLayer();
+    this.particleLayer = createLayer();
+    this.nodeLayer = createLayer();
+    this.svg.append(this.markerLayer, this.lineLayer, this.particleLayer, this.nodeLayer);
 
-    const lines = config.connections.map((conn) => ({
-      conn,
-      el: createConnectionLine(conn, nodesById),
-    }));
+    for (const node of config.nodes) {
+      this.addNode(node);
+    }
+    for (const conn of config.connections) {
+      this.addConnection(conn);
+    }
 
     const draggableNode = config.nodes.find((n) => n.draggable);
-    const targetMarker = draggableNode ? createTargetMarker(draggableNode) : null;
-    if (targetMarker) {
-      this.svg.appendChild(targetMarker);
-    }
-    for (const { el } of lines) {
-      this.svg.appendChild(el);
-    }
-    for (const group of nodeGroups.values()) {
-      this.svg.appendChild(group);
-    }
-    for (const group of nodeGroups.values()) {
-      const label = group.querySelector<SVGTextElement>(".wd-node-label");
-      if (label) {
-        fitNodeLabel(label);
-      }
-    }
-
     if (draggableNode) {
-      const nodeGroup = nodeGroups.get(draggableNode.id)!;
-      if (options?.dragHandle) {
-        nodeGroup.style.opacity = "0";
-      } else {
-        nodeGroup.classList.add("wd-node--beckon");
-      }
+      this.runDragStep(draggableNode, {
+        snapThreshold: config.snapThreshold,
+        dragHandle: options?.dragHandle,
+        rootNodeId: config.connections[0]?.from,
+        onComplete: config.onComplete,
+      });
+    }
+  }
 
-      const connectedLines: ConnectedLine[] = lines
-        .filter(({ conn }) => conn.from === draggableNode.id || conn.to === draggableNode.id)
-        .map(({ conn, el }) => ({
-          line: el,
-          endpoint: conn.from === draggableNode.id ? "from" : "to",
-        }));
+  /** registers a node's data and renders its group into the node layer, at its `start` position if draggable */
+  addNode(node: DemoNode): SVGGElement {
+    this.nodesById.set(node.id, node);
+    const group = createNodeGroup(node);
+    this.nodeGroups.set(node.id, group);
+    this.nodeLayer.appendChild(group);
+    const label = group.querySelector<SVGTextElement>(".wd-node-label");
+    if (label) {
+      fitNodeLabel(label);
+    }
+    return group;
+  }
 
-      const revealTargets: RevealTarget[] = lines.map(({ el }) => ({
-        element: el as SVGElement,
-        baseOpacity: 0.5,
+  /** renders a connection's line into the line layer; both endpoints must already be registered via addNode */
+  addConnection(conn: DemoConnection): SVGLineElement {
+    const el = createConnectionLine(conn, this.nodesById);
+    this.lines.push({ conn, el });
+    this.lineLayer.appendChild(el);
+    return el;
+  }
+
+  /** updates an already-registered node's label text in place, refitting it to the node's radius */
+  relabelNode(id: string, label: string): void {
+    const labelEl = this.nodeGroups.get(id)?.querySelector<SVGTextElement>(".wd-node-label");
+    if (!labelEl) return;
+    labelEl.style.fontSize = "";
+    labelEl.textContent = label;
+    fitNodeLabel(labelEl);
+  }
+
+  /** wires drag-to-target interaction for an already-registered node; fires the snap celebration on success */
+  runDragStep(node: DemoNode, options: DragStepOptions): void {
+    const nodeGroup = this.nodeGroups.get(node.id)!;
+    const targetMarker = createTargetMarker(node);
+    this.markerLayer.appendChild(targetMarker);
+
+    if (options.dragHandle) {
+      nodeGroup.style.opacity = "0";
+    } else {
+      nodeGroup.classList.add("wd-node--beckon");
+    }
+
+    const connectedLines: ConnectedLine[] = this.lines
+      .filter(({ conn }) => conn.from === node.id || conn.to === node.id)
+      .map(({ conn, el }) => ({
+        line: el,
+        endpoint: conn.from === node.id ? "from" : "to",
       }));
 
-      attachDrag(
-        {
-          svg: this.svg,
-          nodeGroup,
-          node: draggableNode,
-          connectedLines,
-          revealTargets,
-          externalHandle: options?.dragHandle,
-          onSnapSuccess: () => {
-            for (const { el } of lines) {
-              el.classList.add("wd-line--active");
-            }
-            targetMarker?.classList.add("wd-target-marker--hidden");
+    const revealTargets: RevealTarget[] = this.lines.map(({ el }) => ({
+      element: el as SVGElement,
+      baseOpacity: 0.5,
+    }));
 
-            nodeGroup.classList.add("wd-node--charged");
-            const rootNodeId = config.connections[0]?.from;
-            const rootNodeGroup = rootNodeId ? nodeGroups.get(rootNodeId) : undefined;
-            if (rootNodeGroup) {
-              rootNodeGroup.classList.add("wd-node--charged");
-              const rootNodeShape = rootNodeGroup.querySelector<SVGElement>(".wd-node-shape");
-              if (rootNodeShape) {
-                rootNodeShape.style.animationDelay = CHARGED_STAGGER_DELAY;
-              }
-            }
+    attachDrag(
+      {
+        svg: this.svg,
+        nodeGroup,
+        node,
+        connectedLines,
+        revealTargets,
+        externalHandle: options.dragHandle,
+        onSnapSuccess: () => this.celebrateSnap(node, nodeGroup, targetMarker, options),
+      },
+      options.snapThreshold,
+    );
+  }
 
-            config.connections.forEach((conn, index) => {
-              const segmentDelay = index === 0 ? FLOW_STAGGER_DELAY : 0;
-              const particles = createFlowParticles(conn, nodesById);
-              particles.forEach((particle, i) => {
-                const delay = segmentDelay + -(i * FLOW_PARTICLE_STAGGER);
-                particle.style.animationDelay = `${delay}s`;
-                this.svg.insertBefore(particle, firstNodeGroup);
-              });
-            });
-
-            const svgRect = this.svg.getBoundingClientRect();
-            const containerRect = this.container.getBoundingClientRect();
-            const scaleX = svgRect.width / config.viewBox.width;
-            const scaleY = svgRect.height / config.viewBox.height;
-            const pxX = svgRect.left - containerRect.left + draggableNode.x * scaleX;
-            const pxY = svgRect.top - containerRect.top + draggableNode.y * scaleY;
-            const shells = createFireworkShells(pxX, pxY);
-            for (const shell of shells) {
-              this.container.appendChild(shell);
-            }
-            setTimeout(() => {
-              for (const shell of shells) {
-                shell.remove();
-              }
-            }, FIREWORK_CLEANUP_MS);
-
-            config.onComplete?.();
-          },
-        },
-        config.snapThreshold,
-      );
+  /** post-snap reveal: activates every line, charges the node and its root, plays flow particles and a firework burst */
+  private celebrateSnap(
+    node: DemoNode,
+    nodeGroup: SVGGElement,
+    targetMarker: SVGGElement,
+    options: DragStepOptions,
+  ): void {
+    for (const { el } of this.lines) {
+      el.classList.add("wd-line--active");
     }
+    targetMarker.classList.add("wd-target-marker--hidden");
+
+    nodeGroup.classList.add("wd-node--charged");
+    const rootNodeGroup = options.rootNodeId ? this.nodeGroups.get(options.rootNodeId) : undefined;
+    if (rootNodeGroup) {
+      rootNodeGroup.classList.add("wd-node--charged");
+      const rootNodeShape = rootNodeGroup.querySelector<SVGElement>(".wd-node-shape");
+      if (rootNodeShape) {
+        rootNodeShape.style.animationDelay = CHARGED_STAGGER_DELAY;
+      }
+    }
+
+    this.lines.forEach(({ conn }, index) => {
+      const segmentDelay = index === 0 ? FLOW_STAGGER_DELAY : 0;
+      const particles = createFlowParticles(conn, this.nodesById);
+      particles.forEach((particle, i) => {
+        const delay = segmentDelay + -(i * FLOW_PARTICLE_STAGGER);
+        particle.style.animationDelay = `${delay}s`;
+        this.particleLayer.appendChild(particle);
+      });
+    });
+
+    const svgRect = this.svg.getBoundingClientRect();
+    const containerRect = this.container.getBoundingClientRect();
+    const scaleX = svgRect.width / this.viewBox.width;
+    const scaleY = svgRect.height / this.viewBox.height;
+    const pxX = svgRect.left - containerRect.left + node.x * scaleX;
+    const pxY = svgRect.top - containerRect.top + node.y * scaleY;
+    const shells = createFireworkShells(pxX, pxY);
+    for (const shell of shells) {
+      this.container.appendChild(shell);
+    }
+    setTimeout(() => {
+      for (const shell of shells) {
+        shell.remove();
+      }
+    }, FIREWORK_CLEANUP_MS);
+
+    options.onComplete?.();
   }
 
   destroy(): void {

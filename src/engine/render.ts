@@ -10,6 +10,11 @@ export function createSvgRoot(viewBox: { width: number; height: number }): SVGSV
   return svg;
 }
 
+/** a plain <g> grouping element, used to keep the scene's z-order stable as nodes/connections are added incrementally */
+export function createLayer(): SVGGElement {
+  return document.createElementNS(SVG_NS, "g") as SVGGElement;
+}
+
 export function createNodeGroup(node: DemoNode): SVGGElement {
   const g = document.createElementNS(SVG_NS, "g") as SVGGElement;
   g.dataset.nodeId = node.id;
