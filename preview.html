@@ -195,7 +195,7 @@
             <div id="demo-a" class="wd-canvas"></div>
           </div>
           <p id="explanation" class="wd-explanation">
-            <strong>Answer</strong><br/>How Users get their User Needs met through the coming-together of Capabilities.
+            <strong>Answer</strong><br/>How <em>Users</em> get their <em>User Needs</em> met, thanks to the <em>Capabilities</em> they depend on.
           </p>
         </div>
       </div>
@@ -230,6 +230,10 @@
       };
 
       WardleyDemo.mount(document.getElementById("demo-a"), config, { dragHandle: dragHandle });
+
+      document.querySelectorAll(".wd-toolbox-slot text").forEach(function (text) {
+        WardleyDemo.fitNodeLabel(text, 26);
+      });
     </script>
   </body>
 </html>

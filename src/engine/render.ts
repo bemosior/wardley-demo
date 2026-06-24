@@ -35,14 +35,16 @@ export function createNodeGroup(node: DemoNode): SVGGElement {
 }
 
 const LABEL_PADDING = 12;
+const LABEL_MIN_FONT_SIZE = 9;
 
-/** shrinks a label's rendered width to fit inside its node if it would otherwise overflow; leaves short labels untouched */
+/** shrinks a label's font-size to fit inside its node if it would otherwise overflow; leaves short labels untouched */
 export function fitNodeLabel(label: SVGTextElement, radius: number = NODE_RADIUS): void {
   const maxWidth = radius * 2 - LABEL_PADDING;
   const actualWidth = label.getComputedTextLength();
   if (actualWidth > maxWidth) {
-    label.setAttribute("textLength", String(maxWidth));
-    label.setAttribute("lengthAdjust", "spacingAndGlyphs");
+    const currentFontSize = parseFloat(getComputedStyle(label).fontSize);
+    const fittedFontSize = Math.max(LABEL_MIN_FONT_SIZE, currentFontSize * (maxWidth / actualWidth));
+    label.style.fontSize = `${fittedFontSize}px`;
   }
 }
 
