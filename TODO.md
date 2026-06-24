@@ -61,22 +61,36 @@ Four layers, strict one-way dependency (lower layers know nothing about higher o
 
 ## Phase 1 — Personalize the value chain (done)
 
-- [x] `Toolbox` is now a 5-step data-entry sequence (no dragging): pick a need
-      from `NEED_CATALOG` → type a User → type Capability 1 → 2 → 3 → celebrate.
-- [x] `layoutValueChain` gained a `draggable?: boolean` option (default `true`,
-      Phase 1 passes `false`) so no node is marked draggable and the
-      constructor's auto-drag-step is a no-op.
-- [x] `runValueChainScenario` (`src/demos/userNeedDependency.ts`) is now `async`,
-      walking `panel.showField` calls in sequence and relabeling both the domain
-      `ValueChain` (via `relabelNeed`/`relabelUser`/`relabelCapability`) and the
-      rendered nodes (`demo.relabelNode`) as each answer comes in.
+One continuous flow, not a replacement of Phase 0 — the drag step still
+happens first, then the Toolbox continues into the 5-step form:
+
+- [x] Drag the generic Need into place (unchanged Phase 0 step, same
+      `panel.showDragHandles`/`runDragStep` wiring as before), **then** the
+      Toolbox becomes a 5-step data-entry sequence: pick a need from
+      `NEED_CATALOG` → type a User → type Capability 1 → 2 → 3 → celebrate.
+      Both phases run against the same mounted `WardleyDemo` instance/canvas.
+- [x] `runValueChainScenario` (`src/demos/userNeedDependency.ts`) is now
+      `async`: it `await`s a `Promise` wrapping the drag step's `onComplete`
+      callback, then walks `panel.showField` calls in sequence, relabeling
+      both the domain `ValueChain` (via `relabelNeed`/`relabelUser`/
+      `relabelCapability`) and the rendered nodes (`demo.relabelNode`) as each
+      answer comes in.
 - [x] `WardleyDemo` gained a public `celebrate(nodeId)` method — activates all
       lines, charges every node, plays flow particles, and fires a firework
-      burst centered on `nodeId`, without requiring a drag/snap. `celebrateSnap`
-      was refactored to share the same `activateLines`/`spawnFlowParticles`/
-      `fireworkAt` helpers.
-- [x] Verified end-to-end in the dev server: form steps relabel nodes live,
-      final celebration charges the chain and fires `onCelebrate`.
+      burst centered on `nodeId`, without requiring a drag/snap. Used for the
+      *second*, bigger celebration once personalization finishes (the drag
+      step's own snap still triggers the existing `celebrateSnap` flourish).
+      `celebrateSnap` was refactored to share the same `activateLines`/
+      `spawnFlowParticles`/`fireworkAt` helpers.
+- [x] A host-supplied `config` (e.g. `preview.html`'s hand-tuned geometry) must
+      still mark the Need `draggable: true` with a `start`, and must use the
+      seed `ValueChain`'s node ids (`user`, `need`, `dependency-1/2/3`) since
+      relabeling is keyed by those ids — documented on
+      `ValueChainScenarioOptions.config`. Fixed `preview.html`'s config, which
+      had drifted (`capability-N` ids, stale drag `start`) from a prior phase.
+- [x] Verified end-to-end in the dev server and in `preview.html`'s built-bundle
+      embed: drag snaps and charges the chain, form steps relabel nodes live,
+      final celebration re-charges everything and fires `onCelebrate`.
 
 ## Phase 2 — Evolution (not started; needs new abstractions)
 

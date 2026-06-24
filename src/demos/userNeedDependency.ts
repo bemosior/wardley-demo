@@ -1,5 +1,5 @@
 import { WardleyDemo } from "../engine/WardleyDemo";
-import { Panel } from "../engine/panel";
+import { Panel, type PanelDragSlot } from "../engine/panel";
 import { createValueChain, relabelCapability, relabelNeed, relabelUser } from "../domain/valueChain";
 import { layoutValueChain, type ValueChainLayoutOptions } from "../application/valueChainLayout";
 import { NEED_CATALOG } from "../domain/needCatalog";
@@ -15,27 +15,55 @@ const seedValueChain = createValueChain({
   ],
 });
 
+const PANEL_SLOTS: PanelDragSlot[] = [
+  { id: "user", iconText: "User", label: "Who It's For", active: false },
+  { id: "need", iconText: "User Need", label: "What They Get", active: true },
+  { id: "capability", iconText: "Capability", label: "How They Get It", active: false },
+];
+
 export interface ValueChainScenarioOptions {
   canvas: HTMLElement;
   toolbox: HTMLElement;
   onCelebrate?: () => void;
   /** override the generated layout's geometry; ignored if `config` is supplied */
   layout?: ValueChainLayoutOptions;
-  /** supply a fully custom DemoConfig (e.g. a host page's hand-tuned embed geometry) instead of the generated one */
+  /**
+   * supply a fully custom DemoConfig (e.g. a host page's hand-tuned embed geometry)
+   * instead of the generated one. Node ids must match the seed ValueChain's
+   * ("user", "need", "dependency-1", "dependency-2", "dependency-3") — relabeling
+   * is keyed by those ids. The Need node must be `draggable: true` with a `start`,
+   * matching what `layoutValueChain` produces by default.
+   */
   config?: DemoConfig;
 }
 
 /**
- * Phase 1 of the tutorial: the Toolbox walks the visitor through a 5-step
- * form (need -> user -> 3 capabilities) instead of a drag step, relabeling
- * each placeholder node as its answer comes in, then celebrates once the
- * value chain is fully personalized.
+ * One continuous flow: drag the generic Need into place (Phase 0), then the
+ * Toolbox walks the visitor through a 5-step form (need -> user -> 3
+ * capabilities) that relabels each placeholder node as its answer comes in
+ * (Phase 1), celebrating once more at the end now that the chain is fully
+ * personalized.
  */
 export async function runValueChainScenario(options: ValueChainScenarioOptions): Promise<WardleyDemo> {
   let chain = seedValueChain;
-  const demoConfig = options.config ?? layoutValueChain(chain, { ...options.layout, draggable: false });
+  const demoConfig = options.config ?? layoutValueChain(chain, options.layout);
   const panel = new Panel(options.toolbox);
-  const demo = WardleyDemo.mount(options.canvas, demoConfig);
+  const dragHandle = panel.showDragHandles(PANEL_SLOTS);
+
+  let demo!: WardleyDemo;
+  await new Promise<void>((resolve) => {
+    demo = WardleyDemo.mount(
+      options.canvas,
+      {
+        ...demoConfig,
+        onComplete: () => {
+          dragHandle.complete();
+          resolve();
+        },
+      },
+      { dragHandle: dragHandle.activeElement },
+    );
+  });
 
   const needId = await panel.showField({
     type: "select",
