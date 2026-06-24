@@ -16,6 +16,9 @@ const FLOW_PARTICLE_STAGGER = FLOW_PARTICLE_CYCLE / FLOW_PARTICLE_COUNT;
 /** negative delay so the User<-Need segment stays permanently phase-shifted behind the lead (Dependency<-Need) segments */
 const FLOW_STAGGER_DELAY = -0.47;
 
+/** delay so the root node's idle "charged" glow stays permanently phase-shifted behind the draggable node's */
+const CHARGED_STAGGER_DELAY = "0.4s";
+
 export class WardleyDemo {
   private container: HTMLElement;
   private svg: SVGSVGElement;
@@ -87,6 +90,17 @@ export class WardleyDemo {
               el.classList.add("wd-line--active");
             }
             targetMarker?.classList.add("wd-target-marker--hidden");
+
+            nodeGroup.classList.add("wd-node--charged");
+            const rootNodeId = config.connections[0]?.from;
+            const rootNodeGroup = rootNodeId ? nodeGroups.get(rootNodeId) : undefined;
+            if (rootNodeGroup) {
+              rootNodeGroup.classList.add("wd-node--charged");
+              const rootNodeShape = rootNodeGroup.querySelector<SVGElement>(".wd-node-shape");
+              if (rootNodeShape) {
+                rootNodeShape.style.animationDelay = CHARGED_STAGGER_DELAY;
+              }
+            }
 
             config.connections.forEach((conn, index) => {
               const segmentDelay = index === 0 ? FLOW_STAGGER_DELAY : 0;

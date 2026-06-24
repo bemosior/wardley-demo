@@ -57,6 +57,23 @@ const CSS = `
   50% { filter: drop-shadow(0 0 8px rgba(0, 95, 153, 0.55)); }
 }
 
+.wd-node--charged .wd-node-shape {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wd-node-charged 2.4s ease-in-out infinite;
+}
+
+@keyframes wd-node-charged {
+  0%, 100% {
+    filter: drop-shadow(0 0 0 rgba(126, 200, 255, 0));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(126, 200, 255, 0.7));
+    transform: scale(1.02);
+  }
+}
+
 .wd-target-marker {
   opacity: 0.6;
   transition: opacity 0.25s ease;
@@ -124,6 +141,9 @@ const CSS = `
   }
   .wd-flow-particle {
     display: none;
+  }
+  .wd-node--charged .wd-node-shape {
+    animation: none;
   }
 }
 `;
