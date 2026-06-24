@@ -1,4 +1,4 @@
-import type { DemoConnection, DemoNode } from "../types";
+import type { DemoConnection, DemoNode } from "./types";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 export const NODE_RADIUS = 48;

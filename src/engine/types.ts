@@ -1,3 +1,9 @@
+/**
+ * generic rendering/interaction contract for the engine. Deliberately unaware
+ * of Wardley Mapping semantics (no "User", "Need", "Capability") — the engine
+ * only ever sees nodes and connections, so it can render any domain's graphs.
+ * Domain concepts are translated into these shapes by the application layer.
+ */
 export interface DemoNode {
   id: string;
   label: string;

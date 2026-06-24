@@ -1,5 +1,5 @@
 import { animateTo, type Point } from "./animate";
-import type { DemoNode } from "../types";
+import type { DemoNode } from "./types";
 
 export interface ConnectedLine {
   line: SVGLineElement;

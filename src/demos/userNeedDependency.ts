@@ -1,17 +1,17 @@
-import type { DemoConfig } from "../types";
+import { createValueChain } from "../domain/valueChain";
+import { layoutValueChain } from "../application/valueChainLayout";
+import type { DemoConfig } from "../engine/types";
 
-export const userNeedDependencyDemo: DemoConfig = {
+const valueChain = createValueChain({
+  user: { id: "user", label: "User" },
+  need: { id: "need", label: "Need" },
+  capabilities: [
+    { id: "dependency-1", label: "Capability" },
+    { id: "dependency-2", label: "Capability" },
+  ],
+});
+
+export const userNeedDependencyDemo: DemoConfig = layoutValueChain(valueChain, {
   viewBox: { width: 400, height: 300 },
-  snapThreshold: 30,
-  nodes: [
-    { id: "user", label: "User", x: 200, y: -48, draggable: false },
-    { id: "need", label: "Need", x: 200, y: 76, draggable: true, start: { x: 35, y: 76 } },
-    { id: "dependency-1", label: "Capability", x: 130, y: 157, draggable: false },
-    { id: "dependency-2", label: "Capability", x: 270, y: 157, draggable: false },
-  ],
-  connections: [
-    { from: "user", to: "need" },
-    { from: "need", to: "dependency-1" },
-    { from: "need", to: "dependency-2" },
-  ],
-};
+  needStart: { x: 35, y: 76 },
+});
