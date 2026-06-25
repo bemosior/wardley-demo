@@ -50,6 +50,9 @@ export class Panel {
     this.clear();
     let active: HTMLElement | null = null;
 
+    const content = document.createElement("div");
+    content.classList.add("wd-panel-content");
+
     for (const slot of slots) {
       const wrapper = document.createElement("div");
       wrapper.classList.add("wd-panel-slot");
@@ -78,13 +81,15 @@ export class Panel {
       caption.textContent = slot.label;
 
       wrapper.append(svg, caption);
-      this.container.appendChild(wrapper);
+      content.appendChild(wrapper);
       fitNodeLabel(text, ICON_RADIUS);
 
       if (slot.active) {
         active = wrapper;
       }
     }
+
+    this.container.appendChild(content);
 
     if (!active) {
       throw new Error("Panel.showDragHandles requires exactly one active slot");
@@ -104,7 +109,7 @@ export class Panel {
     this.clear();
     return new Promise((resolve) => {
       const form = document.createElement("form");
-      form.classList.add("wd-panel-form");
+      form.classList.add("wd-panel-form", "wd-panel-content");
 
       const prompt = document.createElement("label");
       prompt.classList.add("wd-panel-form-prompt");

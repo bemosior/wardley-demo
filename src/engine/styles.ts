@@ -152,6 +152,13 @@ const CSS = `
   100% { box-shadow: var(--wd-fw-end); opacity: 0; }
 }
 
+.wd-panel-content {
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .wd-panel-slot {
   position: relative;
   display: flex;
