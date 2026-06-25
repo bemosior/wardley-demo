@@ -100,7 +100,7 @@ happens first, then the Toolbox continues into the 5-step form:
       embed: drag snaps and charges the chain, form steps relabel nodes live,
       final celebration re-charges everything and fires `onCelebrate`.
 
-## Phase 2 — Evolution (entry gate done; map/drag/instrument-panel not started)
+## Phase 2 — Evolution (entry gate + map backdrop done; drag/instrument-panel not started)
 
 Goal: a Wardley map backdrop appears behind the value chain; User floats above
 it, Need + Capabilities sit on it; visitor drags each of Need/Capability-1/2/3
@@ -120,11 +120,35 @@ left-right along its evolution axis one at a time, sees live characteristics
       `Panel` gained `showEmpty()` (renders a bare `.wd-panel-content`
       placeholder, same `min-height: 360px` as every other mode) so the
       Toolbox holds its full height, empty for now, ready for whatever
-      Phase 2 content fills it next. No map/drag/instrument-panel work
-      landed yet — this is only the seam those pieces will hook into.
+      Phase 2 content fills it next.
+- [x] Map backdrop rendering: `render.ts`'s `createMapBackdrop(viewBox)` draws
+      the four evolution-stage bands (Genesis/Custom-Built/Product/Commodity)
+      with dividers and labels, styled in `styles.ts`. `WardleyDemo` renders
+      it into a new `backdropLayer` (bottom of the z-order) via
+      `showMapBackdrop(scale, targetHeightPx?)`, called from
+      `runValueChainScenario` right after `onEvolutionReady`. Getting this
+      right took two follow-up fixes beyond the initial render — both
+      because resizing the canvas at the same moment the backdrop appears is
+      easy to get subtly wrong in ways that move/resize the already-placed
+      nodes (disorienting to a visitor mid-demo):
+      - `captureScale()` snapshots the demo's current on-screen scale
+        *before* the host expands the canvas; `showMapBackdrop` then widens
+        (never shrinks) the viewBox to exactly fill the new width/height at
+        that *same* scale, so every existing node keeps its exact pixel size
+        and position — only new map area becomes visible alongside/beneath
+        them. `targetHeightPx` (the toolbox's measured height) makes the map
+        match the toolbox's height the same way.
+      - The host pages (`index.html`, `preview.html`) had their own
+        layout-shift bugs that caused a jump even with the scale math fixed:
+        auto-centering on `.wd-canvas`/`.demo-row` re-centered the whole
+        block the instant its width changed, and `.wd-explanation--hidden`
+        clamped `max-width: 0` but not height, so its long text wrapped into
+        a tall invisible column that (combined with `align-items: center`)
+        pushed siblings down. Both host pages now anchor the canvas
+        flush-left with a fixed top margin and clamp `max-height: 0` too, so
+        nothing shifts when the explanation collapses.
 
-This phase needs pieces that don't exist yet — don't assume they're hiding somewhere:
-- **Map backdrop rendering.** Nothing in `engine/render.ts` draws map gridlines/axis-stage backdrop (Genesis/Custom-Built/Product/Commodity bands). New code, likely a new `render.ts` factory (e.g. `createMapBackdrop(viewBox)`) plus new CSS classes in `styles.ts`.
+This phase still needs pieces that don't exist yet — don't assume they're hiding somewhere:
 - **Evolution-axis constraint on drag.** `drag.ts`'s `attachDrag` currently snaps to one fixed `(x,y)` target point within `snapThreshold`. Phase 2 wants free horizontal movement along a stage axis with a *confirm* action rather than a snap-to-point — that's a different interaction mode, not a parameterization of the existing one. Plan for a second function in `drag.ts` (or a mode flag) rather than overloading `attachDrag`.
 - **Evolutionary-characteristics data.** No data module for this yet. Needs a small domain module (e.g. `src/domain/evolution.ts`) mapping evolution-stage (continuous x-position, or a discretized stage enum) → characteristics text, probably split by `ComponentKind` (`need` vs `capability`) per the forecast ("characteristics relevant to capabilities instead of user needs").
 - **Live-updating "instrument panel" Panel mode.** `panel.ts`'s `Panel` class needs a new method, e.g. `showInstrumentPanel(...)`, that re-renders characteristics text as drag position changes — `showField`'s one-shot promise resolution model doesn't fit a continuously-updating readout. This is the mode `panel.ts`'s own doc comment already flags as deferred.
