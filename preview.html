@@ -127,9 +127,39 @@
         min-height: 1.2rem;
         line-height: 1.2rem;
       }
+
+      /* dev-only chrome, not part of the simulated host embed */
+      .wd-dev-skip {
+        position: fixed;
+        top: 0.5rem;
+        right: 0.5rem;
+        font-family: var(--font-ui);
+        font-size: 0.75rem;
+        color: #888;
+        background: #fff;
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        padding: 0.35rem 0.5rem;
+        z-index: 10;
+      }
+      .wd-dev-skip select {
+        font-size: 0.75rem;
+        margin-left: 0.35rem;
+      }
     </style>
   </head>
   <body>
+    <div class="wd-dev-skip">
+      <label>Dev: skip to
+        <select id="dev-skip-select">
+          <option value="">(none)</option>
+          <option value="phase1">Phase 1 form</option>
+          <option value="celebrate">Celebration</option>
+          <option value="phase2">Phase 2 gate</option>
+        </select>
+      </label>
+    </div>
+
     <section class="hero">
       <div class="hero-inner">
         <div class="demo-row">
@@ -151,10 +181,32 @@
     <script>
       var answer = document.getElementById("vc-answer");
       var explanation = document.querySelector(".wd-explanation");
+      var toolbox = document.getElementById("toolbox-a");
+      var nextControl = document.getElementById("vc-next");
+
+      // Dev-only test shortcut: pick a moment from the dropdown (or load with
+      // ?skipTo=phase1|celebrate|phase2) to jump straight past earlier phases
+      // instead of replaying drag + 5 form fields + two "Next" clicks by hand.
+      var skipSelect = document.getElementById("dev-skip-select");
+      var skipTarget = WardleyDemo.dev.parseSkipTarget(location.search);
+      if (skipTarget) skipSelect.value = skipTarget;
+      skipSelect.addEventListener("change", function () {
+        var url = new URL(location.href);
+        if (skipSelect.value) {
+          url.searchParams.set("skipTo", skipSelect.value);
+        } else {
+          url.searchParams.delete("skipTo");
+        }
+        location.href = url.toString();
+      });
+      var autopilot = skipTarget
+        ? WardleyDemo.dev.attachAutopilot({ toolbox: toolbox, nextControl: nextControl, target: skipTarget })
+        : undefined;
+
       WardleyDemo.demos.userNeedDependency({
         canvas: document.getElementById("demo-a"),
-        toolbox: document.getElementById("toolbox-a"),
-        nextControl: document.getElementById("vc-next"),
+        toolbox: toolbox,
+        nextControl: nextControl,
         onNeedPlaced: function () {
           answer.classList.add("wd-answer--visible");
         },
@@ -163,6 +215,7 @@
           document.querySelector(".wd-instance").classList.add("wd-instance--expanded");
           document.getElementById("demo-a").classList.add("wd-canvas--expanded");
         },
+        onMount: autopilot && autopilot.onMount,
         config: {
           viewBox: { width: 400, height: 520 },
           snapThreshold: 30,
