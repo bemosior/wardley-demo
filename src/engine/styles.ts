@@ -160,10 +160,10 @@ const CSS = `
 }
 
 .wd-next-link {
-  display: inline-block;
-  margin-top: 0.75rem;
+  display: block;
   font-family: var(--wd-font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   font-size: 0.85rem;
+  line-height: 1.3rem;
   color: var(--wd-color-link, #005f99);
   text-decoration: underline;
   cursor: pointer;
