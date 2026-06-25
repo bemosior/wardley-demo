@@ -125,7 +125,7 @@ export async function runValueChainScenario(options: ValueChainScenarioOptions):
   demo.showMapBackdrop(
     scale,
     options.toolbox.getBoundingClientRect().height,
-    "Now let's turn your *Value Chain*\r\n\r\n into a *Wardley Map*!",
+    "Now let's turn your *Value Chain*\r\ninto a *Wardley Map*!",
   );
 
   return demo;

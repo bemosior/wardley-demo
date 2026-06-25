@@ -81,4 +81,29 @@ describe("createMapCaption", () => {
       false,
     ]);
   });
+
+  it("splits \\r\\n line breaks into one centered x/dy tspan per line, since SVG ignores literal newlines", () => {
+    const caption = createMapCaption("Now let's turn your *Value Chain*\r\ninto a *Wardley Map*!", 550, 260);
+
+    expect(caption.textContent).toBe("Now let's turn your Value Chaininto a Wardley Map!");
+
+    const lineSpans = caption.querySelectorAll(":scope > tspan");
+    expect(lineSpans).toHaveLength(2);
+    expect(lineSpans[0].getAttribute("x")).toBe("550");
+    expect(lineSpans[1].getAttribute("x")).toBe("550");
+    expect(lineSpans[0].getAttribute("dy")).toBe("-0.65em");
+    expect(lineSpans[1].getAttribute("dy")).toBe("1.3em");
+
+    expect(lineSpans[0].textContent).toBe("Now let's turn your Value Chain");
+    expect(lineSpans[1].textContent).toBe("into a Wardley Map!");
+    expect(lineSpans[0].querySelector(".wd-map-caption-em")?.textContent).toBe("Value Chain");
+    expect(lineSpans[1].querySelector(".wd-map-caption-em")?.textContent).toBe("Wardley Map");
+  });
+
+  it("does not wrap single-line text in a line tspan, keeping segment tspans direct children of <text>", () => {
+    const caption = createMapCaption("Plain caption", 100, 50);
+    const directTspans = caption.querySelectorAll(":scope > tspan");
+    expect(directTspans).toHaveLength(1);
+    expect(directTspans[0].hasAttribute("dy")).toBe(false);
+  });
 });

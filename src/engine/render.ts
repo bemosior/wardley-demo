@@ -159,12 +159,17 @@ export function createMapBackdrop(viewBox: { width: number; height: number }): S
   return g;
 }
 
+const MAP_CAPTION_LINE_HEIGHT_EM = 1.3;
+
 /**
  * a transient caption rendered over the map as it appears; positioned by the caller (e.g.
  * centered on the newly revealed area), faded in/out by `WardleyDemo`. `*word*`-delimited
  * segments of `text` render as italic `<tspan>`s (e.g. for term emphasis), everything else as
- * plain text within the same `<text>` element so `text-anchor: middle` still centers the whole
- * caption as one run.
+ * plain text. `\r?\n` line breaks in `text` (SVG ignores literal newlines in textContent, unlike
+ * HTML with `white-space: pre`) split it into one `<tspan x dy>` per line instead, vertically
+ * centered as a block around `y`. Single-line text skips that wrapper entirely and appends
+ * segment tspans straight onto the `<text>` element, so `text-anchor: middle` keeps centering the
+ * whole thing as one run, same as before line-wrapping existed.
  */
 export function createMapCaption(text: string, x: number, y: number): SVGTextElement {
   const caption = document.createElementNS(SVG_NS, "text") as SVGTextElement;
@@ -172,13 +177,30 @@ export function createMapCaption(text: string, x: number, y: number): SVGTextEle
   caption.setAttribute("x", String(x));
   caption.setAttribute("y", String(y));
 
-  text.split(/\*(.+?)\*/g).forEach((segment, i) => {
-    if (segment === "") return;
-    const tspan = document.createElementNS(SVG_NS, "tspan");
-    tspan.textContent = segment;
-    if (i % 2 === 1) tspan.classList.add("wd-map-caption-em");
-    caption.appendChild(tspan);
-  });
+  const appendSegments = (parent: SVGTextElement | SVGTSpanElement, line: string): void => {
+    line.split(/\*(.+?)\*/g).forEach((segment, i) => {
+      if (segment === "") return;
+      const tspan = document.createElementNS(SVG_NS, "tspan");
+      tspan.textContent = segment;
+      if (i % 2 === 1) tspan.classList.add("wd-map-caption-em");
+      parent.appendChild(tspan);
+    });
+  };
+
+  const lines = text.split(/\r?\n/).filter((line) => line !== "");
+  if (lines.length <= 1) {
+    appendSegments(caption, text);
+  } else {
+    lines.forEach((line, lineIndex) => {
+      const lineSpan = document.createElementNS(SVG_NS, "tspan");
+      lineSpan.setAttribute("x", String(x));
+      const dy =
+        lineIndex === 0 ? -((lines.length - 1) / 2) * MAP_CAPTION_LINE_HEIGHT_EM : MAP_CAPTION_LINE_HEIGHT_EM;
+      lineSpan.setAttribute("dy", `${dy}em`);
+      appendSegments(lineSpan, line);
+      caption.appendChild(lineSpan);
+    });
+  }
 
   return caption;
 }
