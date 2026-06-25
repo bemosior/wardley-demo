@@ -79,7 +79,7 @@ export async function runValueChainScenario(options: ValueChainScenarioOptions):
 
   const needId = await panel.showField({
     type: "select",
-    prompt: "What does this person need?",
+    prompt: "What does the user need?",
     options: NEED_CATALOG.map((need) => ({ value: need.id, label: need.label })),
   });
   const needOption = NEED_CATALOG.find((need) => need.id === needId)!;
@@ -89,7 +89,7 @@ export async function runValueChainScenario(options: ValueChainScenarioOptions):
   const userLabel = await panel.showField({
     type: "text",
     prompt: "Who has this need?",
-    placeholder: "e.g. A commuter",
+    placeholder: "e.g. Commuter",
   });
   chain = relabelUser(chain, userLabel);
   demo.relabelNode(chain.user.id, chain.user.label);
@@ -99,8 +99,8 @@ export async function runValueChainScenario(options: ValueChainScenarioOptions):
     const capability = seedValueChain.capabilities[i];
     const capabilityLabel = await panel.showField({
       type: "text",
-      prompt: `What's something they depend on to get this? (${i + 1} of ${capabilityCount})`,
-      placeholder: "e.g. A kettle",
+      prompt: `What's something they depend on to get this need met? \r\n(${i + 1} of ${capabilityCount})`,
+      placeholder: "e.g. Kettle",
     });
     chain = relabelCapability(chain, capability.id, capabilityLabel);
     demo.relabelNode(capability.id, capabilityLabel);
