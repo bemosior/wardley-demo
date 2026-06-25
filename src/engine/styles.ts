@@ -207,7 +207,7 @@ const CSS = `
 
 .wd-panel-slot text {
   font-family: var(--wd-font-ui);
-  font-size: 11px;
+  font-size: 7.6px; /* matches .wd-node-label's font-size/radius ratio (14px / 48 NODE_RADIUS) scaled to ICON_RADIUS (26) */
   fill: var(--wd-color-ink);
   text-anchor: middle;
   dominant-baseline: middle;
