@@ -153,6 +153,9 @@ export class Panel {
       });
 
       this.container.appendChild(form);
+      if (field.type !== "select") {
+        (input as HTMLInputElement).focus();
+      }
     });
   }
 
