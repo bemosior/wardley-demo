@@ -26,14 +26,17 @@ export interface ValueChainScenarioOptions {
   canvas: HTMLElement;
   toolbox: HTMLElement;
   /**
-   * host-supplied container for the "Next" link that gates the switch from
-   * Phase 0 into the Phase 1 form — typically placed beneath the host's own
-   * explanation text, not inside the Toolbox.
+   * host-supplied container for the "Next" link — reused for two gates in
+   * sequence: first to switch from Phase 0 into the Phase 1 form, then again
+   * after the Phase 1 celebration to switch into Phase 2. Typically placed
+   * beneath the host's own explanation text, not inside the Toolbox.
    */
   nextControl: HTMLElement;
   /** fires as soon as the Need snaps into place (Phase 0 done); the scenario then shows a "Next" link in `nextControl` and waits for the visitor to click it before switching the Toolbox into the Phase 1 form */
   onNeedPlaced?: () => void;
   onCelebrate?: () => void;
+  /** fires once the visitor clicks the second "Next" link (shown in `nextControl` after the celebration) — the signal that Phase 2 starts */
+  onEvolutionReady?: () => void;
   /** override the generated layout's geometry; ignored if `config` is supplied */
   layout?: ValueChainLayoutOptions;
   /**
@@ -52,6 +55,9 @@ export interface ValueChainScenarioOptions {
  * Toolbox walks them through a 5-step form (need -> user -> 3 capabilities)
  * that relabels each placeholder node as its answer comes in (Phase 1),
  * celebrating once more at the end now that the chain is fully personalized.
+ * The Toolbox is then emptied to a full-height placeholder (`Panel.showEmpty`)
+ * rather than collapsed — it stays in place, ready for Phase 2's content —
+ * and a second "Next" link gates the move into Phase 2 (`onEvolutionReady`).
  */
 export async function runValueChainScenario(options: ValueChainScenarioOptions): Promise<WardleyDemo> {
   let chain = seedValueChain;
@@ -106,9 +112,12 @@ export async function runValueChainScenario(options: ValueChainScenarioOptions):
     demo.relabelNode(capability.id, capabilityLabel);
   }
 
-  panel.clear();
+  panel.showEmpty();
   demo.celebrateAll();
   options.onCelebrate?.();
+
+  await showNextLink(options.nextControl);
+  options.onEvolutionReady?.();
 
   return demo;
 }

@@ -116,7 +116,7 @@ describe("runValueChainScenario", () => {
     expect(canvas.querySelector('[data-node-id="dependency-3"] .wd-node-label')!.textContent).toBe("Electricity");
   });
 
-  it("clears the panel and fires onCelebrate once the last capability is answered", async () => {
+  it("empties the panel to a full-height placeholder and fires onCelebrate once the last capability is answered", async () => {
     const onCelebrate = vi.fn();
     const { toolbox, nextControl } = buildScenario(onCelebrate);
     await completeDragStep(toolbox, nextControl);
@@ -135,8 +135,39 @@ describe("runValueChainScenario", () => {
     submitText(toolbox, "Electricity");
     await flush();
 
-    expect(toolbox.children.length).toBe(0);
+    expect(toolbox.querySelector(".wd-panel-content")).not.toBeNull();
+    expect(toolbox.querySelector("form")).toBeNull();
     expect(onCelebrate).toHaveBeenCalledOnce();
+  });
+
+  it("shows a second Next link after celebrating, and fires onEvolutionReady when clicked", async () => {
+    const onEvolutionReady = vi.fn();
+    const canvas = document.createElement("div");
+    const toolbox = document.createElement("div");
+    const nextControl = document.createElement("div");
+    document.body.append(canvas, toolbox, nextControl);
+    runValueChainScenario({ canvas, toolbox, nextControl, onEvolutionReady });
+    await completeDragStep(toolbox, nextControl);
+
+    submitSelect(toolbox, NEED_CATALOG[0].id);
+    await flush();
+    submitText(toolbox, "A commuter");
+    await flush();
+    submitText(toolbox, "A kettle");
+    await flush();
+    submitText(toolbox, "Water");
+    await flush();
+    submitText(toolbox, "Electricity");
+    await flush();
+
+    expect(nextControl.querySelector(".wd-next-link")).not.toBeNull();
+    expect(onEvolutionReady).not.toHaveBeenCalled();
+
+    clickNext(nextControl);
+    await flush();
+
+    expect(onEvolutionReady).toHaveBeenCalledOnce();
+    expect(nextControl.querySelector(".wd-next-link")).toBeNull();
   });
 
   it("does not advance on a whitespace-only capability answer", async () => {
@@ -151,7 +182,7 @@ describe("runValueChainScenario", () => {
     await flush();
 
     expect(toolbox.querySelector(".wd-panel-form-prompt")!.textContent).toBe(
-      "What's something they depend on to get this? (1 of 3)",
+      "What's something they depend on to get this need met? \r\n(1 of 3)",
     );
   });
 });

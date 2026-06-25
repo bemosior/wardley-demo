@@ -156,6 +156,14 @@ export class Panel {
     });
   }
 
+  /** clears the panel down to an empty `.wd-panel-content` placeholder, keeping the toolbox at its full height between modes */
+  showEmpty(): void {
+    this.clear();
+    const content = document.createElement("div");
+    content.classList.add("wd-panel-content");
+    this.container.appendChild(content);
+  }
+
   clear(): void {
     this.container.innerHTML = "";
   }

@@ -100,12 +100,28 @@ happens first, then the Toolbox continues into the 5-step form:
       embed: drag snaps and charges the chain, form steps relabel nodes live,
       final celebration re-charges everything and fires `onCelebrate`.
 
-## Phase 2 — Evolution (not started; needs new abstractions)
+## Phase 2 — Evolution (entry gate done; map/drag/instrument-panel not started)
 
 Goal: a Wardley map backdrop appears behind the value chain; User floats above
 it, Need + Capabilities sit on it; visitor drags each of Need/Capability-1/2/3
 left-right along its evolution axis one at a time, sees live characteristics
 + animation feedback, confirms, repeats, celebrates.
+
+- [x] Phase 1 → Phase 2 transition gate: `runValueChainScenario`
+      (`src/demos/userNeedDependency.ts`) reuses the same `nextControl`
+      container as the Phase 0→1 gate — after the Phase 1 celebration, it
+      shows a second `showNextLink()` link and waits for the visitor to
+      click it before firing a new `onEvolutionReady` callback. Host pages
+      (`index.html`, `preview.html`) use that callback to fade the entire
+      `.wd-explanation` block (question, answer, next link) to invisible via
+      a new `.wd-explanation--hidden` class, since Phase 2 is meant to be
+      played without any explainer text competing for the visitor's
+      attention. The Toolbox itself is *not* collapsed during this gate —
+      `Panel` gained `showEmpty()` (renders a bare `.wd-panel-content`
+      placeholder, same `min-height: 360px` as every other mode) so the
+      Toolbox holds its full height, empty for now, ready for whatever
+      Phase 2 content fills it next. No map/drag/instrument-panel work
+      landed yet — this is only the seam those pieces will hook into.
 
 This phase needs pieces that don't exist yet — don't assume they're hiding somewhere:
 - **Map backdrop rendering.** Nothing in `engine/render.ts` draws map gridlines/axis-stage backdrop (Genesis/Custom-Built/Product/Commodity bands). New code, likely a new `render.ts` factory (e.g. `createMapBackdrop(viewBox)`) plus new CSS classes in `styles.ts`.

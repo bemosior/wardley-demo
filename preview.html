@@ -84,6 +84,12 @@
         line-height: 1.6;
         color: var(--color-ink);
         margin: 0;
+        transition: opacity 0.5s ease;
+      }
+
+      .wd-explanation--hidden {
+        opacity: 0;
+        pointer-events: none;
       }
       .wd-answer {
         opacity: 0;
@@ -124,12 +130,16 @@
     <script src="./dist/wardley-demo.js"></script>
     <script>
       var answer = document.getElementById("vc-answer");
+      var explanation = document.querySelector(".wd-explanation");
       WardleyDemo.demos.userNeedDependency({
         canvas: document.getElementById("demo-a"),
         toolbox: document.getElementById("toolbox-a"),
         nextControl: document.getElementById("vc-next"),
         onNeedPlaced: function () {
           answer.classList.add("wd-answer--visible");
+        },
+        onEvolutionReady: function () {
+          explanation.classList.add("wd-explanation--hidden");
         },
         config: {
           viewBox: { width: 400, height: 520 },

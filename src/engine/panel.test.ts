@@ -121,3 +121,18 @@ describe("Panel.clear", () => {
     expect(container.children.length).toBe(0);
   });
 });
+
+describe("Panel.showEmpty", () => {
+  it("replaces any prior content with an empty .wd-panel-content placeholder", () => {
+    const container = makeContainer();
+    const panel = new Panel(container);
+    panel.showField({ type: "text", prompt: "Who has this need?" });
+
+    panel.showEmpty();
+
+    expect(container.children.length).toBe(1);
+    const content = container.querySelector(".wd-panel-content");
+    expect(content).not.toBeNull();
+    expect(content!.children.length).toBe(0);
+  });
+});
