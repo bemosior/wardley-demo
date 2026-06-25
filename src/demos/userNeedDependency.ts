@@ -89,7 +89,7 @@ export async function runValueChainScenario(options: ValueChainScenarioOptions):
   const userLabel = await panel.showField({
     type: "text",
     prompt: "Who has this need?",
-    placeholder: "e.g. Commuter",
+    placeholder: "Commuter",
   });
   chain = relabelUser(chain, userLabel);
   demo.relabelNode(chain.user.id, chain.user.label);
@@ -100,7 +100,7 @@ export async function runValueChainScenario(options: ValueChainScenarioOptions):
     const capabilityLabel = await panel.showField({
       type: "text",
       prompt: `What's something they depend on to get this need met? \r\n(${i + 1} of ${capabilityCount})`,
-      placeholder: "e.g. Kettle",
+      placeholder: "Kettle",
     });
     chain = relabelCapability(chain, capability.id, capabilityLabel);
     demo.relabelNode(capability.id, capabilityLabel);
