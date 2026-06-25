@@ -130,6 +130,44 @@ describe("WardleyDemo.showMapBackdrop", () => {
     const svg = container.querySelector("svg")!;
     expect(svg.getAttribute("viewBox")).toBe("0 0 400 300");
   });
+
+  it("with captionText, shows a caption centered on the newly revealed area that fades in then out and is removed", () => {
+    vi.useFakeTimers();
+    const container = document.createElement("div");
+    Object.defineProperty(container, "getBoundingClientRect", {
+      value: () => ({ width: 800, height: 0, top: 0, left: 0, right: 0, bottom: 0, x: 0, y: 0, toJSON() {} }),
+    });
+    document.body.appendChild(container);
+    const demo = WardleyDemo.mount(container, {
+      viewBox: { width: 400, height: 300 },
+      nodes: [],
+      connections: [],
+      snapThreshold: 30,
+    });
+
+    // scale 1: viewBox widens from 400 to 800 -> the newly revealed strip is 400..800, so the
+    // caption should center at x=600, not over the original 0..400 area where nodes already sit.
+    demo.showMapBackdrop(1, undefined, "Let's turn it into a Wardley Map!");
+
+    const caption = container.querySelector(".wd-map-caption")!;
+    expect(caption.textContent).toBe("Let's turn it into a Wardley Map!");
+    expect(caption.getAttribute("x")).toBe("600");
+    expect(caption.classList.contains("wd-map-caption--visible")).toBe(false);
+
+    // advance only past the 0ms fade-in timer, not the later 2200ms fade-out one (which
+    // `runOnlyPendingTimers` would also fire here, since both are already pending).
+    vi.advanceTimersByTime(0);
+    expect(caption.classList.contains("wd-map-caption--visible")).toBe(true);
+
+    vi.advanceTimersByTime(2200);
+    expect(caption.classList.contains("wd-map-caption--visible")).toBe(false);
+    expect(container.querySelector(".wd-map-caption")).not.toBeNull();
+
+    vi.advanceTimersByTime(600);
+    expect(container.querySelector(".wd-map-caption")).toBeNull();
+
+    vi.useRealTimers();
+  });
 });
 
 describe("WardleyDemo.relabelNode", () => {

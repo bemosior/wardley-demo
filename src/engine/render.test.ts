@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMapBackdrop } from "./render";
+import { createMapBackdrop, createMapCaption } from "./render";
 
 describe("createMapBackdrop", () => {
   it("renders 4 equal-width bands spanning the viewBox, in stage order", () => {
@@ -46,5 +46,39 @@ describe("createMapBackdrop", () => {
     expect(divider.getAttribute("y1")).toBe("0");
     expect(divider.getAttribute("y2")).toBe("520");
     expect(label.getAttribute("y")).toBe("506");
+  });
+});
+
+describe("createMapCaption", () => {
+  it("renders the given text at the given position, starting invisible", () => {
+    const caption = createMapCaption("Let's turn it into a Wardley Map!", 550, 260);
+
+    expect(caption.textContent).toBe("Let's turn it into a Wardley Map!");
+    expect(caption.getAttribute("x")).toBe("550");
+    expect(caption.getAttribute("y")).toBe("260");
+    expect(caption.classList.contains("wd-map-caption")).toBe(true);
+    expect(caption.classList.contains("wd-map-caption--visible")).toBe(false);
+  });
+
+  it("renders *word*-delimited segments as separate italic tspans, joining back into the full plain text", () => {
+    const caption = createMapCaption("Now let's turn the *Value Chain* into a *Wardley Map*!", 550, 260);
+
+    expect(caption.textContent).toBe("Now let's turn the Value Chain into a Wardley Map!");
+
+    const tspans = caption.querySelectorAll("tspan");
+    expect([...tspans].map((t) => t.textContent)).toEqual([
+      "Now let's turn the ",
+      "Value Chain",
+      " into a ",
+      "Wardley Map",
+      "!",
+    ]);
+    expect([...tspans].map((t) => t.classList.contains("wd-map-caption-em"))).toEqual([
+      false,
+      true,
+      false,
+      true,
+      false,
+    ]);
   });
 });

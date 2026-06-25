@@ -122,7 +122,11 @@ export async function runValueChainScenario(options: ValueChainScenarioOptions):
   await showNextLink(options.nextControl);
   const scale = demo.captureScale();
   options.onEvolutionReady?.();
-  demo.showMapBackdrop(scale, options.toolbox.getBoundingClientRect().height);
+  demo.showMapBackdrop(
+    scale,
+    options.toolbox.getBoundingClientRect().height,
+    "Now let's turn the *Value Chain* into a *Wardley Map*!",
+  );
 
   return demo;
 }

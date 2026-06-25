@@ -159,6 +159,30 @@ export function createMapBackdrop(viewBox: { width: number; height: number }): S
   return g;
 }
 
+/**
+ * a transient caption rendered over the map as it appears; positioned by the caller (e.g.
+ * centered on the newly revealed area), faded in/out by `WardleyDemo`. `*word*`-delimited
+ * segments of `text` render as italic `<tspan>`s (e.g. for term emphasis), everything else as
+ * plain text within the same `<text>` element so `text-anchor: middle` still centers the whole
+ * caption as one run.
+ */
+export function createMapCaption(text: string, x: number, y: number): SVGTextElement {
+  const caption = document.createElementNS(SVG_NS, "text") as SVGTextElement;
+  caption.classList.add("wd-map-caption");
+  caption.setAttribute("x", String(x));
+  caption.setAttribute("y", String(y));
+
+  text.split(/\*(.+?)\*/g).forEach((segment, i) => {
+    if (segment === "") return;
+    const tspan = document.createElementNS(SVG_NS, "tspan");
+    tspan.textContent = segment;
+    if (i % 2 === 1) tspan.classList.add("wd-map-caption-em");
+    caption.appendChild(tspan);
+  });
+
+  return caption;
+}
+
 export function createTargetMarker(node: DemoNode): SVGGElement {
   const g = document.createElementNS(SVG_NS, "g") as SVGGElement;
   g.classList.add("wd-target-marker");

@@ -65,6 +65,27 @@ const CSS = `
   user-select: none;
 }
 
+.wd-map-caption {
+  font-family: var(--wd-font-ui);
+  font-size: 22px;
+  font-weight: 700;
+  fill: var(--wd-color-ink, #1a1a1a);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.wd-map-caption--visible {
+  opacity: 1;
+}
+
+.wd-map-caption-em {
+  font-style: italic;
+}
+
 .wd-node-shape {
   fill: #fff;
   stroke: var(--wd-color-ink, #1a1a1a);
@@ -341,6 +362,9 @@ const CSS = `
   }
   .wd-firework-shell {
     display: none;
+  }
+  .wd-map-caption {
+    transition-duration: 0.01s;
   }
 }
 `;

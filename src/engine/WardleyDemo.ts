@@ -5,6 +5,7 @@ import {
   createFlowParticles,
   createLayer,
   createMapBackdrop,
+  createMapCaption,
   createNodeGroup,
   createSvgRoot,
   createTargetMarker,
@@ -42,17 +43,23 @@ const CHARGED_STAGGER_DELAY = "0.4s";
 const FIREWORK_CLEANUP_MS = 1700;
 const FIREWORK_BURST_STAGGER_MS = 250;
 
+/** how long the map caption (e.g. "Let's turn it into a Wardley Map!") stays fully visible before fading out */
+const MAP_CAPTION_VISIBLE_MS = 2200;
+/** matches .wd-map-caption's opacity transition duration, so cleanup removes the element only after it's invisible */
+const MAP_CAPTION_FADE_MS = 600;
+
 export class WardleyDemo {
   private container: HTMLElement;
   private svg: SVGSVGElement;
   private viewBox: { width: number; height: number };
 
-  /** fixed z-order, bottom to top: map backdrop, target markers, connection lines, flow particles, node groups */
+  /** fixed z-order, bottom to top: map backdrop, target markers, connection lines, flow particles, node groups, map caption */
   private backdropLayer: SVGGElement;
   private markerLayer: SVGGElement;
   private lineLayer: SVGGElement;
   private particleLayer: SVGGElement;
   private nodeLayer: SVGGElement;
+  private captionLayer: SVGGElement;
 
   private nodesById = new Map<string, DemoNode>();
   private nodeGroups = new Map<string, SVGGElement>();
@@ -86,7 +93,15 @@ export class WardleyDemo {
     this.lineLayer = createLayer();
     this.particleLayer = createLayer();
     this.nodeLayer = createLayer();
-    this.svg.append(this.backdropLayer, this.markerLayer, this.lineLayer, this.particleLayer, this.nodeLayer);
+    this.captionLayer = createLayer();
+    this.svg.append(
+      this.backdropLayer,
+      this.markerLayer,
+      this.lineLayer,
+      this.particleLayer,
+      this.nodeLayer,
+      this.captionLayer,
+    );
 
     for (const node of config.nodes) {
       this.addNode(node);
@@ -128,9 +143,12 @@ export class WardleyDemo {
    * the existing viewBox, so every existing node keeps its current pixel size and position; only
    * new map area becomes visible alongside/beneath them. A non-positive `scale` (the default in
    * environments with no real layout) is a no-op and the backdrop renders at the existing viewBox
-   * size.
+   * size. If `captionText` is given, it's shown as a transient overlay (see `showMapCaption`)
+   * centered on whatever new area the resize just revealed (or the whole viewBox, if there was no
+   * resize) — never over the already-placed value chain.
    */
-  showMapBackdrop(scale: number, targetHeightPx?: number): void {
+  showMapBackdrop(scale: number, targetHeightPx?: number, captionText?: string): void {
+    const previousWidth = this.viewBox.width;
     const rect = this.container.getBoundingClientRect();
     if (rect.width > 0 && scale > 0) {
       const mapWidth = Math.max(this.viewBox.width, rect.width / scale);
@@ -141,6 +159,26 @@ export class WardleyDemo {
       this.svg.setAttribute("viewBox", `0 0 ${this.viewBox.width} ${this.viewBox.height}`);
     }
     this.backdropLayer.appendChild(createMapBackdrop(this.viewBox));
+
+    if (captionText) {
+      const captionX = (previousWidth + this.viewBox.width) / 2;
+      this.showMapCaption(captionText, captionX, this.viewBox.height / 2);
+    }
+  }
+
+  /** renders `text` into the caption layer (above everything), fades it in, then fades it out and removes it a couple seconds later */
+  private showMapCaption(text: string, x: number, y: number): void {
+    const caption = createMapCaption(text, x, y);
+    this.captionLayer.appendChild(caption);
+
+    // deferred via setTimeout (not added synchronously) so the browser paints the caption's
+    // initial opacity:0 first — adding the visible class in the same tick it's appended would let
+    // the browser coalesce both states and skip the transition entirely.
+    setTimeout(() => caption.classList.add("wd-map-caption--visible"), 0);
+    setTimeout(() => {
+      caption.classList.remove("wd-map-caption--visible");
+      setTimeout(() => caption.remove(), MAP_CAPTION_FADE_MS);
+    }, MAP_CAPTION_VISIBLE_MS);
   }
 
   /** registers a node's data and renders its group into the node layer, at its `start` position if draggable */
