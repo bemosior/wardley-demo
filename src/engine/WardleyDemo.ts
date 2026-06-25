@@ -188,19 +188,17 @@ export class WardleyDemo {
   }
 
   /**
-   * non-drag celebration: activates every line, charges every node, plays flow
-   * particles and a firework burst centered on `nodeId`. For flows (e.g. Phase 1's
-   * form sequence) that finish without a drag/snap to anchor the celebration to.
+   * non-drag celebration: fires a firework burst centered on `nodeId`. For flows
+   * (e.g. Phase 1's form sequence) that finish without a drag/snap to anchor the
+   * celebration to. The lines/charging/flow-particle animations from Phase 0's
+   * `celebrateSnap` are already running continuously by this point and aren't
+   * re-triggered here.
    */
   celebrate(nodeId: string): void {
     const node = this.nodesById.get(nodeId);
     if (!node) return;
 
     this.activateLines();
-    for (const group of this.nodeGroups.values()) {
-      group.classList.add("wd-node--charged");
-    }
-    this.spawnFlowParticles();
     this.fireworkAt(node.x, node.y);
   }
 

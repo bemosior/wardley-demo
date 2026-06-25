@@ -1,6 +1,15 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runValueChainScenario } from "./userNeedDependency";
 import { NEED_CATALOG } from "../domain/needCatalog";
+
+/** the scenario staggers the Toolbox's switch into the form behind a host's onNeedPlaced reveal via setTimeout; fake only setTimeout/clearTimeout so the drag step's rAF-driven snap animation still runs for real */
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 function drag(handle: Element, to: { x: number; y: number }): void {
   handle.dispatchEvent(new PointerEvent("pointerdown", { clientX: 0, clientY: 0, pointerId: 1 }));
@@ -43,6 +52,8 @@ async function completeDragStep(toolbox: HTMLElement): Promise<void> {
   const activeSlot = toolbox.querySelector(".wd-panel-slot--active")!;
   drag(activeSlot, { x: 200, y: 76 });
   await flush();
+  /** advances past the scenario's onNeedPlaced -> form stagger (see userNeedDependency.ts's TOOLBOX_STAGGER_MS) */
+  await vi.advanceTimersByTimeAsync(500);
 }
 
 describe("runValueChainScenario", () => {
@@ -50,6 +61,24 @@ describe("runValueChainScenario", () => {
     const { toolbox } = buildScenario(vi.fn());
     expect(toolbox.querySelector(".wd-panel-slot--active")).not.toBeNull();
     expect(toolbox.querySelector("form")).toBeNull();
+  });
+
+  it("fires onNeedPlaced as soon as the Need snaps, staggered ahead of the Toolbox switching into the form", async () => {
+    const onNeedPlaced = vi.fn();
+    const canvas = document.createElement("div");
+    const toolbox = document.createElement("div");
+    document.body.append(canvas, toolbox);
+    runValueChainScenario({ canvas, toolbox, onNeedPlaced });
+
+    const activeSlot = toolbox.querySelector(".wd-panel-slot--active")!;
+    drag(activeSlot, { x: 200, y: 76 });
+    await flush();
+
+    expect(onNeedPlaced).toHaveBeenCalledOnce();
+    expect(toolbox.querySelector("form")).toBeNull();
+
+    await vi.advanceTimersByTimeAsync(500);
+    expect(toolbox.querySelector("form")).not.toBeNull();
   });
 
   it("does not advance to the form sequence if the Need is dropped away from its target", async () => {

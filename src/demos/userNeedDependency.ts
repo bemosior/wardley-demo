@@ -21,9 +21,18 @@ const PANEL_SLOTS: PanelDragSlot[] = [
   { id: "capability", iconText: "Capability", label: "How They Get It", active: false },
 ];
 
+/** stagger between the Need's snap (Phase 0 done) and the Toolbox switching into the Phase 1 form, so a host's reveal tied to onNeedPlaced is visible first */
+const TOOLBOX_STAGGER_MS = 500;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export interface ValueChainScenarioOptions {
   canvas: HTMLElement;
   toolbox: HTMLElement;
+  /** fires as soon as the Need snaps into place (Phase 0 done), before the Toolbox switches into the Phase 1 form */
+  onNeedPlaced?: () => void;
   onCelebrate?: () => void;
   /** override the generated layout's geometry; ignored if `config` is supplied */
   layout?: ValueChainLayoutOptions;
@@ -64,6 +73,9 @@ export async function runValueChainScenario(options: ValueChainScenarioOptions):
       { dragHandle: dragHandle.activeElement },
     );
   });
+
+  options.onNeedPlaced?.();
+  await wait(TOOLBOX_STAGGER_MS);
 
   const needId = await panel.showField({
     type: "select",

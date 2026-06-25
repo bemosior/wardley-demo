@@ -120,10 +120,8 @@
       WardleyDemo.demos.userNeedDependency({
         canvas: document.getElementById("demo-a"),
         toolbox: document.getElementById("toolbox-a"),
-        onCelebrate: function () {
-          setTimeout(function () {
-            answer.classList.add("wd-answer--visible");
-          }, 500);
+        onNeedPlaced: function () {
+          answer.classList.add("wd-answer--visible");
         },
         config: {
           viewBox: { width: 400, height: 520 },

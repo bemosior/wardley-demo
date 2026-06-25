@@ -95,13 +95,14 @@ describe("WardleyDemo.celebrate", () => {
     return { demo, container };
   }
 
-  it("activates every line and charges every node", () => {
+  it("activates every line and fires a firework, without charging nodes that weren't already charged", () => {
     const { demo, container } = buildDemo();
     demo.celebrate("need");
 
     expect(container.querySelector(".wd-line")!.classList.contains("wd-line--active")).toBe(true);
-    expect(container.querySelector('[data-node-id="user"]')!.classList.contains("wd-node--charged")).toBe(true);
-    expect(container.querySelector('[data-node-id="need"]')!.classList.contains("wd-node--charged")).toBe(true);
+    expect(container.querySelector(".wd-firework-shell")).not.toBeNull();
+    expect(container.querySelector('[data-node-id="user"]')!.classList.contains("wd-node--charged")).toBe(false);
+    expect(container.querySelector('[data-node-id="need"]')!.classList.contains("wd-node--charged")).toBe(false);
   });
 
   it("does nothing if the node id isn't registered", () => {
