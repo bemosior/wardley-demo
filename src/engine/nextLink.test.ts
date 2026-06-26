@@ -37,4 +37,11 @@ describe("showNextLink", () => {
 
     expect(container.querySelector(".wd-next-link")).toBeNull();
   });
+
+  it("renders a custom label when given", () => {
+    const container = makeContainer();
+    showNextLink(container, "Confirm placement");
+
+    expect(container.querySelector(".wd-next-link")!.textContent).toBe("Confirm placement");
+  });
 });

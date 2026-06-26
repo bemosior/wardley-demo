@@ -193,6 +193,14 @@ export class Panel {
     setTimeout(() => content.classList.add("wd-panel-placeholder--visible"), delayMs);
   }
 
+  /** updates the subheading text of an already-rendered `showPlaceholder`; a no-op if the panel isn't currently in that mode */
+  updatePlaceholderSubheading(text: string): void {
+    const subheadingEl = this.container.querySelector<HTMLElement>(".wd-panel-placeholder-subheading");
+    if (subheadingEl) {
+      subheadingEl.textContent = text;
+    }
+  }
+
   clear(): void {
     this.container.innerHTML = "";
   }

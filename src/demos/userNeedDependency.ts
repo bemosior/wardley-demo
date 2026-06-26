@@ -62,7 +62,13 @@ export interface ValueChainScenarioOptions {
  * and a second "Next" link gates the move into Phase 2 (`onEvolutionReady`).
  * Once that fires, the Toolbox swaps to `Panel.showPlaceholder` showing the
  * Need's label and its starting evolution stage ("Genesis") — a stand-in for
- * the instrument-panel mode Phase 2 hasn't built yet.
+ * the instrument-panel mode Phase 2 hasn't built yet, though its subheading
+ * already updates live (`Panel.updatePlaceholderSubheading`) as the visitor
+ * drags the Need along the evolution axis (`demo.runEvolutionDragStep`). A
+ * "Confirm placement" link (the same `showNextLink` control, relabeled)
+ * appears the first time the Need is dropped, and resolves this function
+ * once clicked. Capability-1/2/3 don't repeat this step yet — Need only, for
+ * now.
  */
 export async function runValueChainScenario(options: ValueChainScenarioOptions): Promise<WardleyDemo> {
   let chain = seedValueChain;
@@ -137,6 +143,18 @@ export async function runValueChainScenario(options: ValueChainScenarioOptions):
   // rather than sliding immediately while the caption/placeholder are still fading in.
   setTimeout(() => demo.slideToGenesis(chain.need.id), MAP_CAPTION_FADE_MS);
   demo.beckonNode(chain.need.id);
+
+  await new Promise<void>((resolve) => {
+    const evolutionStep = demo.runEvolutionDragStep(chain.need.id, {
+      onPositionChange: (stageLabel) => panel.updatePlaceholderSubheading(stageLabel),
+      onReadyToConfirm: () => {
+        showNextLink(options.nextControl, "Confirm placement").then(() => {
+          evolutionStep.confirm();
+          resolve();
+        });
+      },
+    });
+  });
 
   return demo;
 }

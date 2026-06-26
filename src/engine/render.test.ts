@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMapBackdrop, createMapCaption, genesisCenterX } from "./render";
+import { createMapBackdrop, createMapCaption, genesisCenterX, stageLabelAt } from "./render";
 
 describe("createMapBackdrop", () => {
   it("renders 4 equal-width bands spanning the viewBox, in stage order", () => {
@@ -59,6 +59,27 @@ describe("genesisCenterX", () => {
 
   it("is one eighth of the viewBox width", () => {
     expect(genesisCenterX(800)).toBe(100);
+  });
+});
+
+describe("stageLabelAt", () => {
+  it("returns each of the four stage names across the x range, matching the backdrop's own bands", () => {
+    expect(stageLabelAt(50, 400)).toBe("Genesis");
+    expect(stageLabelAt(150, 400)).toBe("Custom-Built");
+    expect(stageLabelAt(250, 400)).toBe("Product");
+    expect(stageLabelAt(350, 400)).toBe("Commodity");
+  });
+
+  it("clamps to the first stage for negative x", () => {
+    expect(stageLabelAt(-20, 400)).toBe("Genesis");
+  });
+
+  it("clamps to the last stage for x beyond the viewBox width", () => {
+    expect(stageLabelAt(1000, 400)).toBe("Commodity");
+  });
+
+  it("treats a band boundary as belonging to the band to its right", () => {
+    expect(stageLabelAt(100, 400)).toBe("Custom-Built");
   });
 });
 

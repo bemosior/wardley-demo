@@ -213,6 +213,71 @@ describe("runValueChainScenario", () => {
     expect(toolbox.querySelector(".wd-panel-placeholder-subheading")!.textContent).toBe("Genesis");
   });
 
+  /** walks the Phase 1 form and clicks past the Phase 1->2 gate, landing right where the Need starts beckoning on the map (default layout's Genesis x is 50, at the Need's unchanged y of 76) */
+  async function reachEvolutionStep(toolbox: HTMLElement, nextControl: HTMLElement): Promise<void> {
+    await completeDragStep(toolbox, nextControl);
+    submitSelect(toolbox, NEED_CATALOG[0].id);
+    await flush();
+    submitText(toolbox, "A commuter");
+    await flush();
+    submitText(toolbox, "A kettle");
+    await flush();
+    submitText(toolbox, "Water");
+    await flush();
+    submitText(toolbox, "Electricity");
+    await flush();
+    clickNext(nextControl);
+    await flush();
+    vi.advanceTimersByTime(MAP_CAPTION_FADE_MS);
+  }
+
+  it("doesn't show a confirm link until the Need is dragged at least once", async () => {
+    vi.useFakeTimers();
+    const canvas = document.createElement("div");
+    const toolbox = document.createElement("div");
+    const nextControl = document.createElement("div");
+    document.body.append(canvas, toolbox, nextControl);
+    runValueChainScenario({ canvas, toolbox, nextControl });
+    await reachEvolutionStep(toolbox, nextControl);
+
+    expect(nextControl.querySelector(".wd-next-link")).toBeNull();
+
+    drag(canvas.querySelector('[data-node-id="need"]')!, { x: 150, y: 76 });
+    await flush();
+
+    const confirmLink = nextControl.querySelector<HTMLAnchorElement>(".wd-next-link");
+    expect(confirmLink).not.toBeNull();
+    expect(confirmLink!.textContent).toBe("Confirm placement");
+    vi.useRealTimers();
+  });
+
+  it("updates the Toolbox subheading live as the Need is dragged, and resolves once the confirm link is clicked", async () => {
+    vi.useFakeTimers();
+    const canvas = document.createElement("div");
+    const toolbox = document.createElement("div");
+    const nextControl = document.createElement("div");
+    document.body.append(canvas, toolbox, nextControl);
+    let resolved = false;
+    runValueChainScenario({ canvas, toolbox, nextControl }).then(() => {
+      resolved = true;
+    });
+    await reachEvolutionStep(toolbox, nextControl);
+
+    expect(toolbox.querySelector(".wd-panel-placeholder-subheading")!.textContent).toBe("Genesis");
+
+    drag(canvas.querySelector('[data-node-id="need"]')!, { x: 250, y: 76 });
+    await flush();
+
+    expect(toolbox.querySelector(".wd-panel-placeholder-subheading")!.textContent).toBe("Product");
+    expect(resolved).toBe(false);
+
+    clickNext(nextControl);
+    await flush();
+
+    expect(resolved).toBe(true);
+    vi.useRealTimers();
+  });
+
   it("does not advance on a whitespace-only capability answer", async () => {
     const { toolbox, nextControl } = buildScenario(vi.fn());
     await completeDragStep(toolbox, nextControl);

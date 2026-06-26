@@ -486,3 +486,89 @@ describe("WardleyDemo.skipDrag", () => {
     expect(onComplete).not.toHaveBeenCalled();
   });
 });
+
+describe("WardleyDemo.runEvolutionDragStep", () => {
+  function buildDemo(): { demo: WardleyDemo; container: HTMLElement } {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const demo = WardleyDemo.mount(container, {
+      viewBox: { width: 400, height: 300 },
+      nodes: [
+        { id: "user", label: "User", x: 200, y: 50, draggable: false },
+        { id: "need", label: "Need", x: 50, y: 150, draggable: false },
+      ],
+      connections: [{ from: "user", to: "need" }],
+      snapThreshold: 30,
+    });
+    return { demo, container };
+  }
+
+  function dragAxis(nodeGroup: Element, fromX: number, toX: number): void {
+    nodeGroup.dispatchEvent(new PointerEvent("pointerdown", { clientX: fromX, clientY: 150, pointerId: 1 }));
+    nodeGroup.dispatchEvent(new PointerEvent("pointermove", { clientX: toX, clientY: 150, pointerId: 1 }));
+    nodeGroup.dispatchEvent(new PointerEvent("pointerup", { clientX: toX, clientY: 150, pointerId: 1 }));
+  }
+
+  it("moves the node and its connected line live as it's dragged, reporting the matching stage label", () => {
+    const { demo, container } = buildDemo();
+    const onPositionChange = vi.fn();
+    demo.runEvolutionDragStep("need", { onPositionChange });
+
+    const nodeGroup = container.querySelector('[data-node-id="need"]')!;
+    nodeGroup.dispatchEvent(new PointerEvent("pointerdown", { clientX: 50, clientY: 150, pointerId: 1 }));
+    nodeGroup.dispatchEvent(new PointerEvent("pointermove", { clientX: 250, clientY: 150, pointerId: 1 }));
+
+    expect(nodeGroup.getAttribute("transform")).toBe("translate(250, 150)");
+    expect(container.querySelector(".wd-line")!.getAttribute("x2")).toBe("250");
+    expect(onPositionChange).toHaveBeenLastCalledWith("Product");
+  });
+
+  it("clamps movement to the viewBox bounds (inset by the node radius)", () => {
+    const { demo, container } = buildDemo();
+    const onPositionChange = vi.fn();
+    demo.runEvolutionDragStep("need", { onPositionChange });
+
+    const nodeGroup = container.querySelector('[data-node-id="need"]')!;
+    nodeGroup.dispatchEvent(new PointerEvent("pointerdown", { clientX: 50, clientY: 150, pointerId: 1 }));
+    nodeGroup.dispatchEvent(new PointerEvent("pointermove", { clientX: -1000, clientY: 150, pointerId: 1 }));
+
+    expect(nodeGroup.getAttribute("transform")).toBe("translate(48, 150)");
+  });
+
+  it("fires onReadyToConfirm once, the first time the node is released, and not again on a second drag", () => {
+    const { demo, container } = buildDemo();
+    const onReadyToConfirm = vi.fn();
+    demo.runEvolutionDragStep("need", { onReadyToConfirm });
+
+    const nodeGroup = container.querySelector('[data-node-id="need"]')!;
+    dragAxis(nodeGroup, 50, 150);
+    expect(onReadyToConfirm).toHaveBeenCalledOnce();
+
+    dragAxis(nodeGroup, 150, 200);
+    expect(onReadyToConfirm).toHaveBeenCalledOnce();
+  });
+
+  it("leaves the node wherever it was dropped, without snapping back or auto-committing", () => {
+    const { demo, container } = buildDemo();
+    demo.runEvolutionDragStep("need");
+
+    dragAxis(container.querySelector('[data-node-id="need"]')!, 50, 150);
+
+    expect(container.querySelector('[data-node-id="need"]')!.getAttribute("transform")).toBe("translate(150, 150)");
+  });
+
+  it("confirm() charges the node, respawns its flow particles, and stops further dragging", () => {
+    const { demo, container } = buildDemo();
+    const evolutionStep = demo.runEvolutionDragStep("need");
+    const nodeGroup = container.querySelector('[data-node-id="need"]')!;
+    dragAxis(nodeGroup, 50, 150);
+
+    evolutionStep.confirm();
+
+    expect(nodeGroup.classList.contains("wd-node--charged")).toBe(true);
+    expect(container.querySelectorAll(".wd-flow-particle").length).toBeGreaterThan(0);
+
+    dragAxis(nodeGroup, 150, 250);
+    expect(nodeGroup.getAttribute("transform")).toBe("translate(150, 150)");
+  });
+});

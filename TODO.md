@@ -100,7 +100,7 @@ happens first, then the Toolbox continues into the 5-step form:
       embed: drag snaps and charges the chain, form steps relabel nodes live,
       final celebration re-charges everything and fires `onCelebrate`.
 
-## Phase 2 — Evolution (entry gate + map backdrop done; drag/instrument-panel not started)
+## Phase 2 — Evolution (entry gate, map backdrop, and Need's drag-confirm done; capability repeat/full instrument-panel not started)
 
 Goal: a Wardley map backdrop appears behind the value chain; User floats above
 it, Need + Capabilities sit on it; visitor drags each of Need/Capability-1/2/3
@@ -147,14 +147,38 @@ left-right along its evolution axis one at a time, sees live characteristics
         pushed siblings down. Both host pages now anchor the canvas
         flush-left with a fixed top margin and clamp `max-height: 0` too, so
         nothing shifts when the explanation collapses.
+- [x] Evolution-axis drag + confirm, wired for the Need node only (Capability-1/2/3
+      repeat the same pattern in a follow-up — see below). New sibling function
+      `attachAxisDrag` in `drag.ts` (a different interaction mode from
+      `attachDrag`'s snap-to-point, not a parameterization of it, as previously
+      planned here): free horizontal drag clamped to `[NODE_RADIUS, viewBoxWidth -
+      NODE_RADIUS]`, no snap-back and no auto-commit on release — the node just
+      stays wherever it's dropped, draggable again until an explicit `confirm()`.
+      `WardleyDemo.runEvolutionDragStep(nodeId, options)` wires this onto an
+      already-registered node and wraps live x into a stage label via
+      `render.ts`'s new `stageLabelAt(x, viewBoxWidth)` (shares
+      `EVOLUTION_STAGES`/band-width math with `createMapBackdrop`/`genesisCenterX`
+      rather than duplicating it). `confirm()` re-charges the node, respawns its
+      flow particles, and fires a firework at its final position as the
+      "placement confirmed" cue. `runValueChainScenario`
+      (`src/demos/userNeedDependency.ts`) wires it right after `demo.beckonNode`:
+      `onPositionChange` calls a new `Panel.updatePlaceholderSubheading(text)` so
+      the Toolbox's "Genesis" subheading updates live as the visitor drags; the
+      first time the node is released (`onReadyToConfirm`), a `showNextLink`
+      (now takes an optional `label` param) appears reading "Confirm placement"
+      instead of "Next" — clicking it calls `confirm()` and resolves the
+      scenario's promise. No instrument-panel/characteristics content yet (see
+      below) — just the live stage name.
 
-This phase still needs pieces that don't exist yet — don't assume they're hiding somewhere:
-- **Evolution-axis constraint on drag.** `drag.ts`'s `attachDrag` currently snaps to one fixed `(x,y)` target point within `snapThreshold`. Phase 2 wants free horizontal movement along a stage axis with a *confirm* action rather than a snap-to-point — that's a different interaction mode, not a parameterization of the existing one. Plan for a second function in `drag.ts` (or a mode flag) rather than overloading `attachDrag`.
+Still missing, not yet built:
+- **Repeat the drag-confirm step for Capability-1/2/3.** Right now only the Need
+  gets `runEvolutionDragStep` wired up. The TODO goal ("drags each of
+  Need/Capability-1/2/3... one at a time... repeats, celebrates") needs the same
+  pattern looped over the three capabilities after the Need's `confirm()`, ending
+  in some bigger celebration (`demo.celebrateAll`-style) once all four are placed.
 - **Evolutionary-characteristics data.** No data module for this yet. Needs a small domain module (e.g. `src/domain/evolution.ts`) mapping evolution-stage (continuous x-position, or a discretized stage enum) → characteristics text, probably split by `ComponentKind` (`need` vs `capability`) per the forecast ("characteristics relevant to capabilities instead of user needs").
-- **Live-updating "instrument panel" Panel mode.** `panel.ts`'s `Panel` class needs a new method, e.g. `showInstrumentPanel(...)`, that re-renders characteristics text as drag position changes — `showField`'s one-shot promise resolution model doesn't fit a continuously-updating readout. This is the mode `panel.ts`'s own doc comment already flags as deferred.
+- **Live-updating "instrument panel" Panel mode.** `panel.ts`'s `Panel` class needs a new method, e.g. `showInstrumentPanel(...)`, that re-renders real characteristics text (once `domain/evolution.ts` exists) as drag position changes, rather than the simple stage-name label `updatePlaceholderSubheading` shows today. This is the mode `panel.ts`'s own doc comment already flags as deferred.
 - **Stage-dependent flow animation.** The "genesis sputters / commodity flows smoothly" requirement means `createFlowParticles` (`render.ts`) and its CSS (`styles.ts`) need parameters for particle count/speed/regularity driven by evolution stage, not just the fixed `FLOW_PARTICLE_COUNT`/timing constants `WardleyDemo.ts` uses today.
-
-Don't start writing Phase 2 code until Phase 1 is done and merged — Phase 1 will likely surface whether the "step sequence" pattern needs to be formalized into a real reusable `Scenario` type, which Phase 2 (4 repeated drag-confirm steps) would also benefit from.
 
 ## Phase 3 — Thinking with the map (not started; needs new abstractions)
 

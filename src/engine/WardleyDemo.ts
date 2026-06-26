@@ -11,14 +11,28 @@ import {
   createTargetMarker,
   fitNodeLabel,
   genesisCenterX,
+  NODE_RADIUS,
+  stageLabelAt,
 } from "./render";
 import { injectStylesOnce } from "./styles";
-import { attachDrag, setNodePosition, type ConnectedLine, type RevealTarget } from "./drag";
+import { attachAxisDrag, attachDrag, setNodePosition, type ConnectedLine, type RevealTarget } from "./drag";
 import { animateTo } from "./animate";
 
 export interface MountOptions {
   /** an external element (e.g. a toolbox slot) that the draggable node must be picked up from */
   dragHandle?: HTMLElement;
+}
+
+export interface EvolutionDragStepOptions {
+  /** fires with the current stage label ("Genesis"/"Custom-Built"/"Product"/"Commodity") on every pointer move */
+  onPositionChange?: (stageLabel: string) => void;
+  /** fires once, the first time the node is dropped — the signal a caller uses to reveal a confirm control */
+  onReadyToConfirm?: () => void;
+}
+
+export interface EvolutionDragHandle {
+  /** locks in the node's current position, fires its "placement confirmed" feedback, and stops further dragging */
+  confirm: () => void;
 }
 
 export interface DragStepOptions {
@@ -358,6 +372,46 @@ export class WardleyDemo {
   }
 
   /**
+   * wires Phase 2's evolution-axis interaction for an already-registered node: free horizontal
+   * drag (no snap, no auto-commit) with live `onPositionChange(stageLabel)` callbacks, and a
+   * returned `confirm()` the caller invokes once the visitor has committed to where they dropped
+   * it — that re-charges the node, respawns flow particles on its lines, and fires a firework at
+   * its final position as the "placement confirmed" cue.
+   */
+  runEvolutionDragStep(nodeId: string, options: EvolutionDragStepOptions = {}): EvolutionDragHandle {
+    const node = this.nodesById.get(nodeId)!;
+    const nodeGroup = this.nodeGroups.get(nodeId)!;
+
+    const connectedLines: ConnectedLine[] = this.lines
+      .filter(({ conn }) => conn.from === nodeId || conn.to === nodeId)
+      .map(({ conn, el }) => ({
+        line: el,
+        endpoint: conn.from === nodeId ? "from" : "to",
+      }));
+
+    const handle = attachAxisDrag({
+      svg: this.svg,
+      nodeGroup,
+      node,
+      connectedLines,
+      minX: NODE_RADIUS,
+      maxX: this.viewBox.width - NODE_RADIUS,
+      onPositionChange: (x) => options.onPositionChange?.(stageLabelAt(x, this.viewBox.width)),
+      onFirstRelease: options.onReadyToConfirm,
+    });
+
+    return {
+      confirm: () => {
+        handle.confirm((x) => {
+          this.respawnFlowParticlesTouching(nodeId);
+          nodeGroup.classList.add("wd-node--charged");
+          this.fireworkAt(x, node.y);
+        });
+      },
+    };
+  }
+
+  /**
    * non-drag celebration: fires one firework burst per node, top to bottom. For
    * flows (e.g. Phase 1's form sequence) that finish without a drag/snap to
    * anchor the celebration to. The lines/charging/flow-particle animations from
@@ -375,6 +429,10 @@ export class WardleyDemo {
   private activateLines(): void {
     for (const { el } of this.lines) {
       el.classList.add("wd-line--active");
+      // clears createConnectionLine's initial opacity:0 (normally lifted by clearRevealOverride
+      // mid-drag) — skipDrag() never runs a drag, so that inline override would otherwise survive
+      // and mask the wd-line--active CSS rule, leaving the line invisible despite being "active"
+      el.style.opacity = "";
     }
   }
 

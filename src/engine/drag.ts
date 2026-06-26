@@ -135,3 +135,81 @@ export function attachDrag(options: DragOptions, snapThreshold: number): void {
     triggerElement.addEventListener("pointercancel", onPointerUp as EventListener);
   }) as EventListener);
 }
+
+export interface AxisDragOptions {
+  svg: SVGSVGElement;
+  nodeGroup: SVGGElement;
+  node: DemoNode;
+  connectedLines: ConnectedLine[];
+  /** clamp bounds (viewBox units) for the node's x while dragging */
+  minX: number;
+  maxX: number;
+  /** fires with the clamped x on every pointer move */
+  onPositionChange?: (x: number) => void;
+  /** fires once, the first time the node is dropped (pointer released) — used to reveal a confirm control only after the visitor has actually tried dragging */
+  onFirstRelease?: () => void;
+}
+
+export interface AxisDragHandle {
+  /** locks the node's x to wherever it currently sits, detaches the drag listener, and calls `onConfirm` with that x */
+  confirm: (onConfirm: (x: number) => void) => void;
+}
+
+/**
+ * free horizontal drag along a fixed y, with no snap-to-point and no
+ * auto-commit on release — the node stays wherever it's dropped (clamped to
+ * `[minX, maxX]`) and stays draggable until `confirm()` is called. This is a
+ * different interaction mode than `attachDrag`'s snap-to-target, not a
+ * parameterization of it (Phase 2's evolution-axis placement: free movement,
+ * live feedback, then an explicit confirm action).
+ */
+export function attachAxisDrag(options: AxisDragOptions): AxisDragHandle {
+  const { svg, nodeGroup, node, connectedLines, minX, maxX, onPositionChange, onFirstRelease } = options;
+
+  let currentX = node.x;
+  let hasReleasedOnce = false;
+  let confirmed = false;
+
+  function clamp(x: number): number {
+    return Math.min(maxX, Math.max(minX, x));
+  }
+
+  function onPointerMove(event: PointerEvent): void {
+    const point = toSvgPoint(svg, event.clientX, event.clientY);
+    currentX = clamp(point.x);
+    setNodePosition(nodeGroup, connectedLines, { x: currentX, y: node.y });
+    onPositionChange?.(currentX);
+  }
+
+  function onPointerUp(event: PointerEvent): void {
+    nodeGroup.removeEventListener("pointermove", onPointerMove as EventListener);
+    nodeGroup.removeEventListener("pointerup", onPointerUp as EventListener);
+    nodeGroup.removeEventListener("pointercancel", onPointerUp as EventListener);
+    nodeGroup.releasePointerCapture(event.pointerId);
+
+    if (!hasReleasedOnce) {
+      hasReleasedOnce = true;
+      onFirstRelease?.();
+    }
+  }
+
+  function onPointerDown(event: PointerEvent): void {
+    if (confirmed) return;
+    nodeGroup.classList.remove("wd-node--beckon");
+    nodeGroup.setPointerCapture(event.pointerId);
+    nodeGroup.addEventListener("pointermove", onPointerMove as EventListener);
+    nodeGroup.addEventListener("pointerup", onPointerUp as EventListener);
+    nodeGroup.addEventListener("pointercancel", onPointerUp as EventListener);
+  }
+
+  nodeGroup.addEventListener("pointerdown", onPointerDown as EventListener);
+
+  return {
+    confirm(onConfirm) {
+      confirmed = true;
+      nodeGroup.removeEventListener("pointerdown", onPointerDown as EventListener);
+      node.x = currentX;
+      onConfirm(currentX);
+    },
+  };
+}

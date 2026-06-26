@@ -126,6 +126,13 @@ export function genesisCenterX(viewBoxWidth: number): number {
   return viewBoxWidth / EVOLUTION_STAGES.length / 2;
 }
 
+/** which evolution-stage band an x-coordinate falls into, for a given viewBox width — shares the same band math as `createMapBackdrop` so a dragged node's live position always agrees with the band it visibly sits on. Clamps to the first/last stage for out-of-range x. */
+export function stageLabelAt(x: number, viewBoxWidth: number): string {
+  const bandWidth = viewBoxWidth / EVOLUTION_STAGES.length;
+  const index = Math.min(EVOLUTION_STAGES.length - 1, Math.max(0, Math.floor(x / bandWidth)));
+  return EVOLUTION_STAGES[index];
+}
+
 export function createMapBackdrop(viewBox: { width: number; height: number }): SVGGElement {
   const g = document.createElementNS(SVG_NS, "g") as SVGGElement;
   g.classList.add("wd-backdrop");
@@ -247,7 +254,7 @@ export function createConnectionLine(
 }
 
 const FLOW_PARTICLE_COUNT = 1;
-const FLOW_PARTICLE_RADIUS = "4.5";
+const FLOW_PARTICLE_RADIUS = 4.5;
 
 /**
  * decorative traveling-spark overlay for a completed connection: returns FLOW_PARTICLE_COUNT
@@ -262,6 +269,7 @@ export function createFlowParticles(
   const from = nodesById.get(conn.from)!;
   const to = nodesById.get(conn.to)!;
   const path = `path("M ${from.x},${from.y} L ${to.x},${to.y}")`;
+  const radius = conn.from === "user" && conn.to === "need" ? FLOW_PARTICLE_RADIUS * 1.5 : FLOW_PARTICLE_RADIUS;
 
   const particles: SVGCircleElement[] = [];
   for (let i = 0; i < FLOW_PARTICLE_COUNT; i++) {
@@ -269,7 +277,7 @@ export function createFlowParticles(
     circle.classList.add("wd-flow-particle");
     circle.dataset.from = conn.from;
     circle.dataset.to = conn.to;
-    circle.setAttribute("r", FLOW_PARTICLE_RADIUS);
+    circle.setAttribute("r", String(radius));
     circle.style.offsetPath = path;
     particles.push(circle);
   }

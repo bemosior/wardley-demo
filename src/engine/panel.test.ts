@@ -151,3 +151,24 @@ describe("Panel.showPlaceholder", () => {
     expect(container.querySelector(".wd-panel-placeholder-subheading")!.textContent).toBe("Genesis");
   });
 });
+
+describe("Panel.updatePlaceholderSubheading", () => {
+  it("updates the subheading text of an already-rendered placeholder", () => {
+    const container = makeContainer();
+    const panel = new Panel(container);
+    panel.showPlaceholder("Hot, drinkable tea", "Genesis");
+
+    panel.updatePlaceholderSubheading("Custom-Built");
+
+    expect(container.querySelector(".wd-panel-placeholder-subheading")!.textContent).toBe("Custom-Built");
+    expect(container.querySelector(".wd-panel-placeholder-heading")!.textContent).toBe("Hot, drinkable tea");
+  });
+
+  it("is a no-op if the panel isn't currently showing a placeholder", () => {
+    const container = makeContainer();
+    const panel = new Panel(container);
+    panel.showEmpty();
+
+    expect(() => panel.updatePlaceholderSubheading("Product")).not.toThrow();
+  });
+});
