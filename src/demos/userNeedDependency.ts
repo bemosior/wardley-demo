@@ -16,6 +16,30 @@ const seedValueChain = createValueChain({
   ],
 });
 
+/**
+ * wires `WardleyDemo.runEvolutionDragStep` for one node and resolves once the visitor confirms
+ * its placement — shared by the Need's evolution step and the Capability-1/2/3 loop that repeats
+ * the same interaction after it.
+ */
+function awaitEvolutionConfirm(
+  demo: WardleyDemo,
+  panel: Panel,
+  nextControl: HTMLElement,
+  nodeId: string,
+): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const evolutionStep = demo.runEvolutionDragStep(nodeId, {
+      onPositionChange: (stageLabel) => panel.updatePlaceholderSubheading(stageLabel),
+      onReadyToConfirm: () => {
+        showNextLink(nextControl, "Confirm placement").then(() => {
+          evolutionStep.confirm();
+          resolve();
+        });
+      },
+    });
+  });
+}
+
 const PANEL_SLOTS: PanelDragSlot[] = [
   { id: "user", iconText: "User", label: "Who It's For", active: false },
   { id: "need", iconText: "User Need", label: "What They Get", active: true },
@@ -67,8 +91,10 @@ export interface ValueChainScenarioOptions {
  * drags the Need along the evolution axis (`demo.runEvolutionDragStep`). A
  * "Confirm placement" link (the same `showNextLink` control, relabeled)
  * appears the first time the Need is dropped, and resolves this function
- * once clicked. Capability-1/2/3 don't repeat this step yet — Need only, for
- * now.
+ * once clicked. The same drag-confirm pattern then repeats for Capability-1/2/3
+ * in turn (each slides into the Genesis column, beckons, and gets its own
+ * placeholder heading/subheading), and once all four nodes are placed the
+ * scenario fires one last `demo.celebrateAll()`.
  */
 export async function runValueChainScenario(options: ValueChainScenarioOptions): Promise<WardleyDemo> {
   let chain = seedValueChain;
@@ -144,17 +170,17 @@ export async function runValueChainScenario(options: ValueChainScenarioOptions):
   setTimeout(() => demo.slideToGenesis(chain.need.id), MAP_CAPTION_FADE_MS);
   demo.beckonNode(chain.need.id);
 
-  await new Promise<void>((resolve) => {
-    const evolutionStep = demo.runEvolutionDragStep(chain.need.id, {
-      onPositionChange: (stageLabel) => panel.updatePlaceholderSubheading(stageLabel),
-      onReadyToConfirm: () => {
-        showNextLink(options.nextControl, "Confirm placement").then(() => {
-          evolutionStep.confirm();
-          resolve();
-        });
-      },
-    });
-  });
+  await awaitEvolutionConfirm(demo, panel, options.nextControl, chain.need.id);
+
+  for (const capability of chain.capabilities) {
+    panel.showPlaceholder(capability.label, "Genesis");
+    demo.beckonNode(capability.id);
+    demo.slideToGenesis(capability.id);
+    await awaitEvolutionConfirm(demo, panel, options.nextControl, capability.id);
+  }
+
+  panel.showEmpty();
+  demo.celebrateAll();
 
   return demo;
 }

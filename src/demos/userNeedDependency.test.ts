@@ -251,7 +251,7 @@ describe("runValueChainScenario", () => {
     vi.useRealTimers();
   });
 
-  it("updates the Toolbox subheading live as the Need is dragged, and resolves once the confirm link is clicked", async () => {
+  it("updates the Toolbox subheading live as the Need is dragged, and moves on to Capability-1 once the confirm link is clicked", async () => {
     vi.useFakeTimers();
     const canvas = document.createElement("div");
     const toolbox = document.createElement("div");
@@ -274,7 +274,59 @@ describe("runValueChainScenario", () => {
     clickNext(nextControl);
     await flush();
 
+    // the scenario doesn't resolve yet — Capability-1/2/3 still have to go through
+    // the same drag-confirm pattern before the whole thing is done
+    expect(resolved).toBe(false);
+    expect(toolbox.querySelector(".wd-panel-placeholder-heading")!.textContent).toBe("A kettle");
+    expect(toolbox.querySelector(".wd-panel-placeholder-subheading")!.textContent).toBe("Genesis");
+    vi.useRealTimers();
+  });
+
+  /** drags a node to (x, y) and clicks the resulting "Confirm placement" link — the same pattern used for the Need and each capability's evolution step */
+  async function confirmEvolutionStep(
+    canvas: HTMLElement,
+    nextControl: HTMLElement,
+    nodeId: string,
+    x: number,
+    y: number,
+  ): Promise<void> {
+    drag(canvas.querySelector(`[data-node-id="${nodeId}"]`)!, { x, y });
+    await flush();
+    clickNext(nextControl);
+    await flush();
+  }
+
+  it("slides each capability into the Genesis column and walks Capability-1/2/3 through the same drag-confirm pattern, celebrating once all four are placed", async () => {
+    vi.useFakeTimers();
+    const canvas = document.createElement("div");
+    const toolbox = document.createElement("div");
+    const nextControl = document.createElement("div");
+    document.body.append(canvas, toolbox, nextControl);
+    let resolved = false;
+    runValueChainScenario({ canvas, toolbox, nextControl }).then(() => {
+      resolved = true;
+    });
+    await reachEvolutionStep(toolbox, nextControl);
+    await confirmEvolutionStep(canvas, nextControl, "need", 150, 76);
+
+    expect(toolbox.querySelector(".wd-panel-placeholder-heading")!.textContent).toBe("A kettle");
+    expect(canvas.querySelector('[data-node-id="dependency-1"]')!.getAttribute("transform")).toMatch(
+      /^translate\(50,/,
+    );
+
+    await confirmEvolutionStep(canvas, nextControl, "dependency-1", 150, 157);
+    expect(toolbox.querySelector(".wd-panel-placeholder-heading")!.textContent).toBe("Water");
+    expect(resolved).toBe(false);
+
+    await confirmEvolutionStep(canvas, nextControl, "dependency-2", 150, 157);
+    expect(toolbox.querySelector(".wd-panel-placeholder-heading")!.textContent).toBe("Electricity");
+    expect(resolved).toBe(false);
+
+    await confirmEvolutionStep(canvas, nextControl, "dependency-3", 150, 157);
+
     expect(resolved).toBe(true);
+    expect(toolbox.querySelector(".wd-panel-placeholder-heading")).toBeNull();
+    expect(toolbox.querySelector(".wd-panel-content")).not.toBeNull();
     vi.useRealTimers();
   });
 
