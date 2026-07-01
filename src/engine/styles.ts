@@ -287,6 +287,24 @@ const CSS = `
   padding: 0 0.5rem;
 }
 
+.wd-panel-recap-list {
+  font-family: var(--wd-font-ui);
+  font-size: 0.85rem;
+  color: var(--wd-color-ink);
+  line-height: 1.5;
+  margin: 0.75rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.wd-panel-recap-list li + li {
+  margin-top: 0.5rem;
+}
+
+.wd-panel-recap-cta {
+  text-align: center;
+  margin-top: 1rem;
+}
+
 .wd-next-link {
   display: block;
   font-family: var(--wd-font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);

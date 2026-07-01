@@ -306,6 +306,41 @@ export class Panel {
     });
   }
 
+  /**
+   * renders the closing recap: a heading, one line per accomplishment, and an external CTA link
+   * (opens in a new tab) — the last thing the visitor sees after clicking the finale's
+   * "What's next →" link.
+   */
+  showRecap(items: string[], cta: { label: string; href: string }): void {
+    this.clear();
+    const content = document.createElement("div");
+    content.classList.add("wd-panel-content", "wd-panel-content--top", "wd-panel-recap");
+
+    const heading = document.createElement("div");
+    heading.classList.add("wd-panel-placeholder-heading");
+    heading.textContent = "Nice work!";
+    content.appendChild(heading);
+
+    const list = document.createElement("ul");
+    list.classList.add("wd-panel-recap-list");
+    for (const item of items) {
+      const li = document.createElement("li");
+      li.textContent = item;
+      list.appendChild(li);
+    }
+    content.appendChild(list);
+
+    const link = document.createElement("a");
+    link.classList.add("wd-next-link", "wd-panel-recap-cta");
+    link.href = cta.href;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = cta.label;
+    content.appendChild(link);
+
+    this.container.appendChild(content);
+  }
+
   /** updates the subheading text of an already-rendered `showPlaceholder`; a no-op if the panel isn't currently in that mode */
   updatePlaceholderSubheading(text: string): void {
     const subheadingEl = this.container.querySelector<HTMLElement>(".wd-panel-placeholder-subheading");

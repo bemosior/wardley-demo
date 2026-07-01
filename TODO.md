@@ -205,4 +205,11 @@ This phase is entirely downstream of Phase 2's map backdrop existing (annotation
 ## Finale
 
 - [x] Big celebration.
-- [x] "Next" control scrolls the visitor to the next section of the page.
+- [x] Clicking the very last "What's next →" link (`panel.confirmPlacement("What's next →")`
+      in `runValueChainScenario`) swaps the Toolbox to a new `Panel.showRecap(items, cta)`
+      mode: a "Nice work!" heading, a bulleted recap of the three phases (value chain →
+      Wardley map → strategic thinking), and an external CTA link (opens in a new tab) to
+      LearnWardleyMapping.com. `index.html`'s old `onComplete` handler (which scrolled to a
+      separate `#thinking` section making the same "now go think strategically" point) was
+      removed along with that section, since the recap now lives in the Toolbox itself and
+      scrolling away would just carry the visitor past it.

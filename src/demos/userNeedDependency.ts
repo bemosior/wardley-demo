@@ -113,7 +113,10 @@ export interface ValueChainScenarioOptions {
  * `QUESTION_POOL` for Capability 3 — and each chosen answer's short
  * `annotation` text is anchored permanently near that capability's node via
  * `demo.addAnnotation`. One final `demo.celebrateAll()` and "What's next →"
- * link close out the whole scenario.
+ * link close out the placement/Q&A part of the scenario; clicking that link
+ * swaps the Toolbox to `Panel.showRecap` — a three-line recap of the whole
+ * session (value chain, map, strategic thinking) plus an external CTA link to
+ * LearnWardleyMapping.com — before `onComplete` fires.
  */
 export async function runValueChainScenario(options: ValueChainScenarioOptions): Promise<WardleyDemo> {
   let chain = seedValueChain;
@@ -221,6 +224,10 @@ export async function runValueChainScenario(options: ValueChainScenarioOptions):
   demo.celebrateAll(2);
 
   await panel.confirmPlacement("What's next →");
+  panel.showRecap(
+    ["You made a Value Chain", "Then you turned it into a Wardley Map", "And finally, you used the map for strategic thinking! Well done!"],
+    { label: "Take your next step →", href: "https://learnwardleymapping.com" },
+  );
   options.onComplete?.();
 
   return demo;

@@ -104,13 +104,6 @@
       <div id="vc-next"></div>
     </div>
 
-    <section id="thinking" style="padding: 4rem 2rem; min-height: 60vh; display: flex; align-items: center; justify-content: center; background: #f9f9f9; border-top: 1px solid #e5e5e5;">
-      <div style="max-width: 480px; text-align: center; font-size: 1.1rem; line-height: 1.7; color: #333;">
-        <h2 style="margin-top: 0;">Now you can think strategically.</h2>
-        <p>Your Wardley Map shows <em>where</em> each capability sits on the evolution axis — from novel to commodity. That position changes everything about how you should treat it.</p>
-      </div>
-    </section>
-
     <script type="module">
       import WardleyDemo from "/src/index.ts";
       import { attachAutopilot, parseSkipTarget } from "/src/dev/autopilot.ts";
@@ -137,7 +130,6 @@
         },
         onMount: autopilot?.onMount,
         onEvolutionStep: autopilot?.onEvolutionStep,
-        onComplete: () => document.getElementById("thinking").scrollIntoView({ behavior: "smooth" }),
       });
     </script>
   </body>
