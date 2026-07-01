@@ -1,0 +1,95 @@
+export interface QuestionOption {
+  id: string;
+  /** full consideration text, shown in the multiple-choice list during the quiz */
+  label: string;
+  /** short text for the persistent map callout once this option is chosen */
+  annotation: string;
+}
+
+export interface Question {
+  id: string;
+  prompt: string;
+  options: QuestionOption[];
+}
+
+/** Phase 3's first question, anchored to Capability 1 — checks for the classic anchoring/novelty bias. */
+export const BIAS_CHECK_QUESTION: Question = {
+  id: "bias-check",
+  prompt: "Look at where you placed this — are you treating it as more novel or bespoke than that position suggests?",
+  options: [
+    {
+      id: "no-bias",
+      label: "No — I've genuinely assessed it against real alternatives on the market.",
+      annotation: "Bias check: clear",
+    },
+    {
+      id: "novelty-bias",
+      label: "Maybe — we call it special partly because we built it ourselves, not because it's actually novel.",
+      annotation: "Watch: novelty bias",
+    },
+    {
+      id: "sunk-cost",
+      label: "Possibly — we've already invested a lot in it, which makes it feel more custom than it is.",
+      annotation: "Watch: sunk-cost bias",
+    },
+  ],
+};
+
+/** Phase 3's second question, anchored to Capability 2 — build vs buy vs outsource doctrine. */
+export const BUILD_BUY_OUTSOURCE_QUESTION: Question = {
+  id: "build-buy-outsource",
+  prompt: "Given where this sits on the map, how should you treat it?",
+  options: [
+    {
+      id: "build",
+      label: "It's early and uncertain, and we understand it better than anyone outside — build it ourselves.",
+      annotation: "Build",
+    },
+    {
+      id: "buy",
+      label: "It's becoming standard enough that vendors already do this well — buy a product.",
+      annotation: "Buy",
+    },
+    {
+      id: "outsource",
+      label: "It's commodity now — there's no advantage in doing this ourselves — outsource it.",
+      annotation: "Outsource",
+    },
+  ],
+};
+
+/** pool for Phase 3's third question, anchored to Capability 3 — re-rollable via `pickRandomQuestion`. */
+export const QUESTION_POOL: Question[] = [
+  {
+    id: "inertia",
+    prompt: "Is anything — habit, a contract, sunk cost — keeping this from moving to match its real stage?",
+    options: [
+      { id: "no-inertia", label: "No — we'd change how we treat it as soon as its stage changed.", annotation: "No inertia" },
+      { id: "org-habit", label: "Yes — the team is used to treating it a certain way, regardless of stage.", annotation: "Watch: org habit" },
+      { id: "contract-lockin", label: "Yes — an existing contract or vendor relationship locks in how we treat it.", annotation: "Watch: contract lock-in" },
+    ],
+  },
+  {
+    id: "differentiation",
+    prompt: "Does this still set you apart from competitors, or is it table stakes now?",
+    options: [
+      { id: "differentiates", label: "It still differentiates us — worth the extra investment.", annotation: "Still differentiates" },
+      { id: "table-stakes", label: "It's table stakes now — everyone needs it, nobody wins because of it.", annotation: "Table stakes" },
+    ],
+  },
+  {
+    id: "attention",
+    prompt: "Are you spending management attention on this in proportion to its stage — a lot for Genesis, almost none for Commodity?",
+    options: [
+      { id: "proportionate", label: "Yes — attention roughly matches the uncertainty at this stage.", annotation: "Attention: proportionate" },
+      { id: "over-attended", label: "No — we're still fussing over it long after it stopped needing that.", annotation: "Watch: over-attended" },
+      { id: "under-attended", label: "No — it's too early for how little attention it's getting.", annotation: "Watch: under-attended" },
+    ],
+  },
+];
+
+/** picks a random pool question, excluding `excludeId` (used by reroll so it never repeats the current one) */
+export function pickRandomQuestion(excludeId?: string): Question {
+  const candidates = QUESTION_POOL.filter((q) => q.id !== excludeId);
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createMapBackdrop, createMapCaption, genesisCenterX, stageLabelAt } from "./render";
+import { createAnnotation, createMapBackdrop, createMapCaption, genesisCenterX, stageLabelAt, type AnnotationRect } from "./render";
+import type { DemoNode } from "./types";
 
 describe("createMapBackdrop", () => {
   it("renders 4 equal-width bands spanning the viewBox, in stage order", () => {
@@ -80,6 +81,44 @@ describe("stageLabelAt", () => {
 
   it("treats a band boundary as belonging to the band to its right", () => {
     expect(stageLabelAt(100, 400)).toBe("Custom-Built");
+  });
+});
+
+describe("createAnnotation", () => {
+  const node: DemoNode = { id: "cap-1", label: "Kettle", x: 200, y: 200, draggable: false };
+
+  it("renders a leader line, background box, and the given text, anchored above the node", () => {
+    const { element, rect } = createAnnotation(node, "Build", []);
+
+    const leader = element.querySelector(".wd-annotation-leader")!;
+    expect(leader.getAttribute("x1")).toBe("200");
+    expect(Number(leader.getAttribute("y1"))).toBeLessThan(node.y);
+
+    const bg = element.querySelector(".wd-annotation-bg")!;
+    expect(bg).not.toBeNull();
+
+    const text = element.querySelector(".wd-annotation-text")!;
+    expect(text.textContent).toBe("Build");
+
+    expect(rect.tier).toBe(0);
+    expect(rect.xMin).toBeLessThan(node.x);
+    expect(rect.xMax).toBeGreaterThan(node.x);
+  });
+
+  it("places a callout that would collide with an already-placed one at a higher tier", () => {
+    const first = createAnnotation(node, "Build", []);
+    const second = createAnnotation(node, "Watch: novelty bias", [first.rect]);
+
+    expect(second.rect.tier).toBe(1);
+  });
+
+  it("does not bump the tier for a callout far enough away to not collide", () => {
+    const placed: AnnotationRect[] = [{ xMin: 0, xMax: 20, tier: 0 }];
+    const farNode: DemoNode = { ...node, x: 500 };
+
+    const { rect } = createAnnotation(farNode, "Buy", placed);
+
+    expect(rect.tier).toBe(0);
   });
 });
 

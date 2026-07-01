@@ -573,3 +573,41 @@ describe("WardleyDemo.runEvolutionDragStep", () => {
     expect(nodeGroup.getAttribute("transform")).toBe("translate(150, 150)");
   });
 });
+
+describe("WardleyDemo.addAnnotation", () => {
+  function buildDemo(): { demo: WardleyDemo; container: HTMLElement } {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const demo = WardleyDemo.mount(container, {
+      viewBox: { width: 400, height: 300 },
+      nodes: [],
+      connections: [],
+      snapThreshold: 30,
+    });
+    return { demo, container };
+  }
+
+  it("appends a .wd-annotation callout containing the given text, anchored above the node", () => {
+    const { demo, container } = buildDemo();
+    demo.addNode({ id: "cap-1", label: "Kettle", x: 200, y: 200, draggable: false });
+
+    demo.addAnnotation("cap-1", "Build");
+
+    const annotation = container.querySelector(".wd-annotation")!;
+    expect(annotation).not.toBeNull();
+    expect(annotation.querySelector(".wd-annotation-text")!.textContent).toBe("Build");
+  });
+
+  it("stacks a second callout that would collide with the first, rather than overlapping it", () => {
+    const { demo, container } = buildDemo();
+    demo.addNode({ id: "cap-1", label: "Kettle", x: 200, y: 200, draggable: false });
+    demo.addNode({ id: "cap-2", label: "Water", x: 200, y: 200, draggable: false });
+
+    demo.addAnnotation("cap-1", "Build");
+    demo.addAnnotation("cap-2", "Buy");
+
+    const texts = container.querySelectorAll(".wd-annotation-text");
+    const ys = [...texts].map((t) => Number(t.getAttribute("y")));
+    expect(ys[0]).not.toBe(ys[1]);
+  });
+});

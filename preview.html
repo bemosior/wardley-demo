@@ -156,6 +156,8 @@
           <option value="phase1">Phase 1 form</option>
           <option value="celebrate">Celebration</option>
           <option value="phase2">Phase 2 gate</option>
+          <option value="finale">Placement finale</option>
+          <option value="thinking">Thinking finale</option>
         </select>
       </label>
     </div>
@@ -216,6 +218,7 @@
           document.getElementById("demo-a").classList.add("wd-canvas--expanded");
         },
         onMount: autopilot && autopilot.onMount,
+        onEvolutionStep: autopilot && autopilot.onEvolutionStep,
         config: {
           viewBox: { width: 400, height: 520 },
           snapThreshold: 30,

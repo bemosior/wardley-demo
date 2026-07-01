@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Panel, type PanelDragSlot } from "./panel";
+import type { Question } from "../domain/questionBank";
 
 function makeContainer(): HTMLElement {
   const el = document.createElement("div");
@@ -149,6 +150,74 @@ describe("Panel.showPlaceholder", () => {
     expect(content).not.toBeNull();
     expect(container.querySelector(".wd-panel-placeholder-heading")!.textContent).toBe("Hot, drinkable tea");
     expect(container.querySelector(".wd-panel-placeholder-subheading")!.textContent).toBe("Genesis");
+  });
+});
+
+describe("Panel.showQuestion", () => {
+  const question: Question = {
+    id: "q1",
+    prompt: "How should you treat this?",
+    options: [
+      { id: "build", label: "Build it ourselves", annotation: "Build" },
+      { id: "buy", label: "Buy a product", annotation: "Buy" },
+    ],
+  };
+  const otherQuestion: Question = {
+    id: "q2",
+    prompt: "Is there inertia here?",
+    options: [{ id: "no", label: "No inertia", annotation: "No inertia" }],
+  };
+
+  it("renders the heading, prompt, and one button per option", () => {
+    const container = makeContainer();
+    const panel = new Panel(container);
+    panel.showQuestion("Capability", question);
+
+    expect(container.querySelector(".wd-panel-placeholder-heading")!.textContent).toBe("Capability");
+    expect(container.querySelector(".wd-panel-question-prompt")!.textContent).toBe(question.prompt);
+    const buttons = container.querySelectorAll<HTMLButtonElement>(".wd-panel-question-option");
+    expect([...buttons].map((b) => b.textContent)).toEqual(["Build it ourselves", "Buy a product"]);
+  });
+
+  it("resolves with the chosen option when its button is clicked", async () => {
+    const container = makeContainer();
+    const panel = new Panel(container);
+    const result = panel.showQuestion("Capability", question);
+
+    const buttons = container.querySelectorAll<HTMLButtonElement>(".wd-panel-question-option");
+    buttons[1].click();
+
+    expect(await result).toEqual(question.options[1]);
+  });
+
+  it("does not render a reroll link when onReroll is omitted", () => {
+    const container = makeContainer();
+    const panel = new Panel(container);
+    panel.showQuestion("Capability", question);
+
+    expect(container.querySelector(".wd-panel-question-reroll")).toBeNull();
+  });
+
+  it("reroll swaps in the replacement question's prompt/options without resolving", async () => {
+    const container = makeContainer();
+    const panel = new Panel(container);
+    let resolved = false;
+    const result = panel.showQuestion("Capability", question, { onReroll: () => otherQuestion });
+    result.then(() => {
+      resolved = true;
+    });
+
+    const reroll = container.querySelector<HTMLAnchorElement>(".wd-panel-question-reroll")!;
+    reroll.click();
+    await Promise.resolve();
+
+    expect(resolved).toBe(false);
+    expect(container.querySelector(".wd-panel-question-prompt")!.textContent).toBe(otherQuestion.prompt);
+    const buttons = container.querySelectorAll<HTMLButtonElement>(".wd-panel-question-option");
+    expect([...buttons].map((b) => b.textContent)).toEqual(["No inertia"]);
+
+    buttons[0].click();
+    expect(await result).toEqual(otherQuestion.options[0]);
   });
 });
 

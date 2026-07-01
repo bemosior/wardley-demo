@@ -1,6 +1,7 @@
 import type { DemoConfig, DemoConnection, DemoNode } from "./types";
 import type { EvolutionStage } from "../domain/evolution";
 import {
+  createAnnotation,
   createConnectionLine,
   createFireworkShells,
   createFlowParticles,
@@ -15,6 +16,7 @@ import {
   genesisCenterX,
   NODE_RADIUS,
   stageLabelAt,
+  type AnnotationRect,
 } from "./render";
 import { injectStylesOnce } from "./styles";
 import { attachAxisDrag, attachDrag, setNodePosition, type ConnectedLine, type RevealTarget } from "./drag";
@@ -72,12 +74,13 @@ export class WardleyDemo {
   private svg: SVGSVGElement;
   private viewBox: { width: number; height: number };
 
-  /** fixed z-order, bottom to top: map backdrop, target markers, connection lines, flow particles, node groups, map caption */
+  /** fixed z-order, bottom to top: map backdrop, target markers, connection lines, flow particles, node groups, annotations, map caption */
   private backdropLayer: SVGGElement;
   private markerLayer: SVGGElement;
   private lineLayer: SVGGElement;
   private particleLayer: SVGGElement;
   private nodeLayer: SVGGElement;
+  private annotationLayer: SVGGElement;
   private captionLayer: SVGGElement;
 
   private nodesById = new Map<string, DemoNode>();
@@ -85,6 +88,8 @@ export class WardleyDemo {
   private lines: { conn: DemoConnection; el: SVGLineElement }[] = [];
   /** a node's confirmed evolution stage, driving how the flow particles on its lines look (see `spawnParticlesForLine`); unset until it's actually placed on the evolution axis, which falls back to Phase 0/1's fixed pre-evolution look */
   private nodeStage = new Map<string, EvolutionStage>();
+  /** every callout box placed so far (Phase 3), so a new one can pick a tier that doesn't collide with it — see `createAnnotation` */
+  private annotationRects: AnnotationRect[] = [];
 
   /** the in-flight drag step, if any — lets `skipDrag()` complete it without a real pointer gesture */
   private pendingDrag?: {
@@ -114,6 +119,7 @@ export class WardleyDemo {
     this.lineLayer = createLayer();
     this.particleLayer = createLayer();
     this.nodeLayer = createLayer();
+    this.annotationLayer = createLayer();
     this.captionLayer = createLayer();
     this.svg.append(
       this.backdropLayer,
@@ -121,6 +127,7 @@ export class WardleyDemo {
       this.lineLayer,
       this.particleLayer,
       this.nodeLayer,
+      this.annotationLayer,
       this.captionLayer,
     );
 
@@ -441,6 +448,19 @@ export class WardleyDemo {
         setTimeout(() => this.fireworkAt(node.x, node.y), offset + i * FIREWORK_BURST_STAGGER_MS);
       });
     }
+  }
+
+  /**
+   * anchors a short text callout near an already-registered node's current position, permanently
+   * visible (Phase 3, one per capability). Basic overlap avoidance: if the callout would collide
+   * horizontally with one already placed, it stacks one tier higher instead (see `createAnnotation`)
+   * rather than solving full layout — at most three of these ever exist.
+   */
+  addAnnotation(nodeId: string, text: string): void {
+    const node = this.nodesById.get(nodeId)!;
+    const { element, rect } = createAnnotation(node, text, this.annotationRects);
+    this.annotationRects.push(rect);
+    this.annotationLayer.appendChild(element);
   }
 
   private activateLines(): void {

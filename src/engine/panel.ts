@@ -2,6 +2,7 @@ import { fitNodeLabel } from "./render";
 import { injectStylesOnce } from "./styles";
 import { showNextLink } from "./nextLink";
 import { characteristicsFor, type EvolutionStage } from "../domain/evolution";
+import type { Question, QuestionOption } from "../domain/questionBank";
 
 /** the two component kinds that travel along the evolution axis — User never does */
 export type EvolutionKind = "need" | "capability";
@@ -38,8 +39,9 @@ export type PanelField =
 /**
  * the side panel ("toolbox"): a single region that swaps between interaction
  * modes as the tutorial progresses. Today: drag-handle (pick up a node), form
- * (answer one prompt at a time), and instrument-panel (live evolution-stage
- * characteristics readout, Phase 2). A Q&A mode (Phase 3) is not built yet.
+ * (answer one prompt at a time), instrument-panel (live evolution-stage
+ * characteristics readout, Phase 2), and question (multiple-choice doctrine
+ * prompt with an optional reroll, Phase 3).
  */
 export class Panel {
   private container: HTMLElement;
@@ -248,6 +250,60 @@ export class Panel {
   confirmPlacement(label = "Confirm placement"): Promise<void> {
     const content = this.container.querySelector<HTMLElement>(".wd-panel-content") ?? this.container;
     return showNextLink(content, label);
+  }
+
+  /**
+   * renders `heading` (the capability's label) + `question.prompt`, then one button per
+   * `question.options`; resolves with the chosen option once clicked. If `onReroll` is given, also
+   * renders a "Try a different question" link — clicking it calls `onReroll()` for a replacement
+   * `Question` and re-renders in place, without resolving the returned promise.
+   */
+  showQuestion(heading: string, question: Question, options?: { onReroll?: () => Question }): Promise<QuestionOption> {
+    return new Promise((resolve) => {
+      const render = (q: Question) => {
+        this.clear();
+        const content = document.createElement("div");
+        content.classList.add("wd-panel-content", "wd-panel-content--top", "wd-panel-question");
+
+        const headingEl = document.createElement("div");
+        headingEl.classList.add("wd-panel-placeholder-heading");
+        headingEl.textContent = heading;
+        content.appendChild(headingEl);
+
+        const promptEl = document.createElement("div");
+        promptEl.classList.add("wd-panel-question-prompt");
+        promptEl.textContent = q.prompt;
+        content.appendChild(promptEl);
+
+        const optionList = document.createElement("div");
+        optionList.classList.add("wd-panel-question-options");
+        for (const option of q.options) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.classList.add("wd-panel-question-option");
+          button.textContent = option.label;
+          button.addEventListener("click", () => resolve(option));
+          optionList.appendChild(button);
+        }
+        content.appendChild(optionList);
+
+        if (options?.onReroll) {
+          const reroll = document.createElement("a");
+          reroll.href = "#";
+          reroll.classList.add("wd-next-link", "wd-panel-question-reroll");
+          reroll.textContent = "Try a different question";
+          reroll.addEventListener("click", (event) => {
+            event.preventDefault();
+            render(options.onReroll!());
+          });
+          content.appendChild(reroll);
+        }
+
+        this.container.appendChild(content);
+      };
+
+      render(question);
+    });
   }
 
   /** updates the subheading text of an already-rendered `showPlaceholder`; a no-op if the panel isn't currently in that mode */

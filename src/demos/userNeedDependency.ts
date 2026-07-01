@@ -2,8 +2,10 @@ import { WardleyDemo, MAP_CAPTION_FADE_MS } from "../engine/WardleyDemo";
 import { Panel, type PanelDragSlot } from "../engine/panel";
 import { showNextLink } from "../engine/nextLink";
 import { createValueChain, relabelCapability, relabelNeed, relabelUser } from "../domain/valueChain";
+import type { Component } from "../domain/component";
 import { layoutValueChain, type ValueChainLayoutOptions } from "../application/valueChainLayout";
 import { NEED_CATALOG } from "../domain/needCatalog";
+import { BIAS_CHECK_QUESTION, BUILD_BUY_OUTSOURCE_QUESTION, pickRandomQuestion, type Question } from "../domain/questionBank";
 import type { DemoConfig } from "../engine/types";
 
 const seedValueChain = createValueChain({
@@ -102,7 +104,16 @@ export interface ValueChainScenarioOptions {
  * once clicked. The same drag-confirm pattern then repeats for Capability-1/2/3
  * in turn (each slides into the Genesis column, beckons, and gets its own
  * placeholder heading/subheading), and once all four nodes are placed the
- * scenario fires one last `demo.celebrateAll()`.
+ * scenario fires `demo.celebrateAll()` for the placement finale. A further
+ * "Confirm placement"-style link (`Panel.confirmPlacement`) then gates Phase 3:
+ * the Toolbox becomes a Q&A mode (`Panel.showQuestion`) asking one
+ * multiple-choice doctrine question per capability — a fixed bias-check
+ * question for Capability 1, a fixed build/buy/outsource question for
+ * Capability 2, and a random pick (rerollable) from `domain/questionBank.ts`'s
+ * `QUESTION_POOL` for Capability 3 — and each chosen answer's short
+ * `annotation` text is anchored permanently near that capability's node via
+ * `demo.addAnnotation`. One final `demo.celebrateAll()` and "What's next →"
+ * link close out the whole scenario.
  */
 export async function runValueChainScenario(options: ValueChainScenarioOptions): Promise<WardleyDemo> {
   let chain = seedValueChain;
@@ -188,6 +199,25 @@ export async function runValueChainScenario(options: ValueChainScenarioOptions):
   }
 
   panel.showPlaceholder("Wardley Map", "All placed!");
+  demo.celebrateAll(2);
+
+  await panel.confirmPlacement("Let's think about it →");
+
+  const questionPlan: { capability: Component; question: Question; reroll: boolean }[] = [
+    { capability: chain.capabilities[0], question: BIAS_CHECK_QUESTION, reroll: false },
+    { capability: chain.capabilities[1], question: BUILD_BUY_OUTSOURCE_QUESTION, reroll: false },
+    { capability: chain.capabilities[2], question: pickRandomQuestion(), reroll: true },
+  ];
+
+  for (const { capability, question, reroll } of questionPlan) {
+    let current = question;
+    const answer = await panel.showQuestion(capability.label, current, {
+      onReroll: reroll ? () => (current = pickRandomQuestion(current.id)) : undefined,
+    });
+    demo.addAnnotation(capability.id, answer.annotation);
+  }
+
+  panel.showEmpty();
   demo.celebrateAll(2);
 
   await panel.confirmPlacement("What's next →");

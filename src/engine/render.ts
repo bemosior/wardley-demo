@@ -230,6 +230,89 @@ export function createTargetMarker(node: DemoNode): SVGGElement {
   return g;
 }
 
+export interface AnnotationRect {
+  xMin: number;
+  xMax: number;
+  tier: number;
+}
+
+const ANNOTATION_GAP_ABOVE_NODE = 14;
+const ANNOTATION_HEIGHT = 22;
+const ANNOTATION_TIER_GAP = 8;
+const ANNOTATION_MAX_TIERS = 4;
+const ANNOTATION_PADDING_X = 10;
+const ANNOTATION_MIN_WIDTH = 60;
+/** rough average glyph width at the annotation font size — good enough for layout spacing, not real typography */
+const ANNOTATION_CHAR_WIDTH = 6.2;
+
+/** estimated pixel width of an annotation's callout box for `text` — a character-count heuristic rather than real text measurement, since the callout isn't attached to the DOM yet when a caller needs to know how much room to reserve for overlap avoidance */
+function estimateAnnotationWidth(text: string): number {
+  return Math.max(ANNOTATION_MIN_WIDTH, text.length * ANNOTATION_CHAR_WIDTH + ANNOTATION_PADDING_X * 2);
+}
+
+/** vertical center of a callout at `tier` tiers above `nodeY` (tier 0 = closest to the node) */
+function annotationCenterY(nodeY: number, tier: number): number {
+  return nodeY - NODE_RADIUS - ANNOTATION_GAP_ABOVE_NODE - ANNOTATION_HEIGHT / 2 - tier * (ANNOTATION_HEIGHT + ANNOTATION_TIER_GAP);
+}
+
+/** the lowest tier at which a callout of `width` centered on `x` doesn't overlap any `placed` rect sharing that tier */
+function findOpenTier(x: number, width: number, placed: AnnotationRect[]): number {
+  const xMin = x - width / 2;
+  const xMax = x + width / 2;
+  for (let tier = 0; tier < ANNOTATION_MAX_TIERS; tier++) {
+    const collides = placed.some((rect) => rect.tier === tier && xMin <= rect.xMax && xMax >= rect.xMin);
+    if (!collides) return tier;
+  }
+  return ANNOTATION_MAX_TIERS - 1;
+}
+
+/**
+ * a short text callout permanently anchored above a node: a leader line from the node's top edge
+ * up to a small rounded box containing `text`. `placed` is every `AnnotationRect` already returned
+ * by a previous call (for this or other nodes) — used to pick the lowest tier (vertical stacking
+ * level, closest-to-node first) whose horizontal extent doesn't collide with an existing callout,
+ * since two nodes can end up confirmed at very close x-positions on the evolution axis. Caller
+ * appends the returned element and accumulates the returned rect for future calls.
+ */
+export function createAnnotation(
+  node: DemoNode,
+  text: string,
+  placed: AnnotationRect[],
+): { element: SVGGElement; rect: AnnotationRect } {
+  const width = estimateAnnotationWidth(text);
+  const tier = findOpenTier(node.x, width, placed);
+  const centerY = annotationCenterY(node.y, tier);
+
+  const g = document.createElementNS(SVG_NS, "g") as SVGGElement;
+  g.classList.add("wd-annotation");
+
+  const leader = document.createElementNS(SVG_NS, "line");
+  leader.classList.add("wd-annotation-leader");
+  leader.setAttribute("x1", String(node.x));
+  leader.setAttribute("y1", String(node.y - NODE_RADIUS));
+  leader.setAttribute("x2", String(node.x));
+  leader.setAttribute("y2", String(centerY + ANNOTATION_HEIGHT / 2));
+  g.appendChild(leader);
+
+  const bg = document.createElementNS(SVG_NS, "rect");
+  bg.classList.add("wd-annotation-bg");
+  bg.setAttribute("x", String(node.x - width / 2));
+  bg.setAttribute("y", String(centerY - ANNOTATION_HEIGHT / 2));
+  bg.setAttribute("width", String(width));
+  bg.setAttribute("height", String(ANNOTATION_HEIGHT));
+  bg.setAttribute("rx", "6");
+  g.appendChild(bg);
+
+  const label = document.createElementNS(SVG_NS, "text");
+  label.classList.add("wd-annotation-text");
+  label.textContent = text;
+  label.setAttribute("x", String(node.x));
+  label.setAttribute("y", String(centerY));
+  g.appendChild(label);
+
+  return { element: g, rect: { xMin: node.x - width / 2, xMax: node.x + width / 2, tier } };
+}
+
 export function createConnectionLine(
   conn: DemoConnection,
   nodesById: Map<string, DemoNode>,

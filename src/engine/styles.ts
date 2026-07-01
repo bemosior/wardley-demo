@@ -220,6 +220,27 @@ const CSS = `
   100% { box-shadow: var(--wd-fw-end); opacity: 0; }
 }
 
+.wd-annotation-leader {
+  stroke: #999;
+  stroke-width: 1.5;
+}
+
+.wd-annotation-bg {
+  fill: #fff;
+  stroke: var(--wd-color-ink, #1a1a1a);
+  stroke-width: 1;
+}
+
+.wd-annotation-text {
+  font-family: var(--wd-font-ui);
+  font-size: 10px;
+  fill: var(--wd-color-ink, #1a1a1a);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
 .wd-panel-content {
   min-height: 360px;
   display: flex;
@@ -359,6 +380,44 @@ const CSS = `
 @keyframes wd-panel-pulse {
   0%, 100% { filter: drop-shadow(0 0 0 rgba(0, 95, 153, 0)); }
   50% { filter: drop-shadow(0 0 6px rgba(0, 95, 153, 0.55)); }
+}
+
+.wd-panel-question-prompt {
+  font-family: var(--wd-font-ui);
+  font-size: 0.85rem;
+  color: var(--wd-color-ink);
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.wd-panel-question-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.wd-panel-question-option {
+  font-family: var(--wd-font-ui);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--wd-color-border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--wd-color-ink);
+  cursor: pointer;
+}
+
+.wd-panel-question-option:hover {
+  border-color: var(--wd-color-link);
+  background: #f0f7ff;
+}
+
+.wd-panel-question-reroll {
+  text-align: center;
+  margin-top: 0.75rem;
 }
 
 .wd-panel-form {

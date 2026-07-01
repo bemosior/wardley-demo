@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { runValueChainScenario } from "./userNeedDependency";
 import { MAP_CAPTION_FADE_MS } from "../engine/WardleyDemo";
 import { NEED_CATALOG } from "../domain/needCatalog";
+import { BIAS_CHECK_QUESTION, BUILD_BUY_OUTSOURCE_QUESTION, QUESTION_POOL } from "../domain/questionBank";
 
 function drag(handle: Element, to: { x: number; y: number }): void {
   handle.dispatchEvent(new PointerEvent("pointerdown", { clientX: 0, clientY: 0, pointerId: 1 }));
@@ -332,12 +333,116 @@ describe("runValueChainScenario", () => {
     expect(toolbox.querySelector(".wd-panel-placeholder-heading")!.textContent).toBe("Wardley Map");
     expect(resolved).toBe(false);
 
+    // the placement finale's confirm link starts Phase 3's Q&A rather than resolving the scenario
     clickConfirm(toolbox);
     await flush();
 
+    expect(resolved).toBe(false);
+    expect(toolbox.querySelector(".wd-panel-question-prompt")!.textContent).toBe(BIAS_CHECK_QUESTION.prompt);
+    vi.useRealTimers();
+  });
+
+  /** walks placement through the Phase 2->3 gate, landing on Capability 1's bias-check question */
+  async function reachThinkingStep(canvas: HTMLElement, toolbox: HTMLElement, nextControl: HTMLElement): Promise<void> {
+    await reachEvolutionStep(toolbox, nextControl);
+    await confirmEvolutionStep(canvas, toolbox, "need", 150, 76);
+    await confirmEvolutionStep(canvas, toolbox, "dependency-1", 150, 157);
+    await confirmEvolutionStep(canvas, toolbox, "dependency-2", 150, 157);
+    await confirmEvolutionStep(canvas, toolbox, "dependency-3", 150, 157);
+    clickConfirm(toolbox);
+    await flush();
+  }
+
+  function clickOption(toolbox: HTMLElement, index = 0): void {
+    toolbox.querySelectorAll<HTMLButtonElement>(".wd-panel-question-option")[index].click();
+  }
+
+  it("asks the bias-check question for Capability 1, the build/buy/outsource question for Capability 2, and a pool question for Capability 3", async () => {
+    vi.useFakeTimers();
+    const canvas = document.createElement("div");
+    const toolbox = document.createElement("div");
+    const nextControl = document.createElement("div");
+    document.body.append(canvas, toolbox, nextControl);
+    runValueChainScenario({ canvas, toolbox, nextControl });
+    await reachThinkingStep(canvas, toolbox, nextControl);
+
+    expect(toolbox.querySelector(".wd-panel-placeholder-heading")!.textContent).toBe("A kettle");
+    expect(toolbox.querySelector(".wd-panel-question-prompt")!.textContent).toBe(BIAS_CHECK_QUESTION.prompt);
+
+    clickOption(toolbox);
+    await flush();
+    expect(toolbox.querySelector(".wd-panel-placeholder-heading")!.textContent).toBe("Water");
+    expect(toolbox.querySelector(".wd-panel-question-prompt")!.textContent).toBe(BUILD_BUY_OUTSOURCE_QUESTION.prompt);
+
+    clickOption(toolbox);
+    await flush();
+    expect(toolbox.querySelector(".wd-panel-placeholder-heading")!.textContent).toBe("Electricity");
+    const poolPrompts = QUESTION_POOL.map((q) => q.prompt);
+    expect(poolPrompts).toContain(toolbox.querySelector(".wd-panel-question-prompt")!.textContent);
+    vi.useRealTimers();
+  });
+
+  it("rerolls to a different question for Capability 3 without advancing, then commits on an option click", async () => {
+    vi.useFakeTimers();
+    const canvas = document.createElement("div");
+    const toolbox = document.createElement("div");
+    const nextControl = document.createElement("div");
+    document.body.append(canvas, toolbox, nextControl);
+    runValueChainScenario({ canvas, toolbox, nextControl });
+    await reachThinkingStep(canvas, toolbox, nextControl);
+
+    clickOption(toolbox);
+    await flush();
+    clickOption(toolbox);
+    await flush();
+
+    const firstPrompt = toolbox.querySelector(".wd-panel-question-prompt")!.textContent;
+    const reroll = toolbox.querySelector<HTMLAnchorElement>(".wd-panel-question-reroll")!;
+    expect(reroll).not.toBeNull();
+    reroll.click();
+    await flush();
+
+    expect(toolbox.querySelector(".wd-panel-question-prompt")!.textContent).not.toBe(firstPrompt);
+    // still Capability 3's question — rerolling doesn't advance to the finale
+    expect(toolbox.querySelector(".wd-panel-question-prompt")).not.toBeNull();
+
+    clickOption(toolbox);
+    await flush();
+
+    expect(toolbox.querySelector(".wd-panel-question-prompt")).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it("anchors a callout to each capability's node as its question is answered, then celebrates and resolves on the final Next click", async () => {
+    vi.useFakeTimers();
+    const canvas = document.createElement("div");
+    const toolbox = document.createElement("div");
+    const nextControl = document.createElement("div");
+    document.body.append(canvas, toolbox, nextControl);
+    let resolved = false;
+    runValueChainScenario({ canvas, toolbox, nextControl }).then(() => {
+      resolved = true;
+    });
+    await reachThinkingStep(canvas, toolbox, nextControl);
+
+    clickOption(toolbox);
+    await flush();
+    expect(canvas.querySelectorAll(".wd-annotation").length).toBe(1);
+
+    clickOption(toolbox);
+    await flush();
+    expect(canvas.querySelectorAll(".wd-annotation").length).toBe(2);
+
+    clickOption(toolbox);
+    await flush();
+    expect(canvas.querySelectorAll(".wd-annotation").length).toBe(3);
+
+    const finalLink = toolbox.querySelector<HTMLAnchorElement>(".wd-next-link")!;
+    expect(finalLink.textContent).toBe("What's next →");
+    finalLink.click();
+    await flush();
+
     expect(resolved).toBe(true);
-    expect(toolbox.querySelector(".wd-panel-placeholder-heading")!.textContent).toBe("Wardley Map");
-    expect(toolbox.querySelector(".wd-panel-content")).not.toBeNull();
     vi.useRealTimers();
   });
 

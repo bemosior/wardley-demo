@@ -108,7 +108,6 @@
       <div style="max-width: 480px; text-align: center; font-size: 1.1rem; line-height: 1.7; color: #333;">
         <h2 style="margin-top: 0;">Now you can think strategically.</h2>
         <p>Your Wardley Map shows <em>where</em> each capability sits on the evolution axis — from novel to commodity. That position changes everything about how you should treat it.</p>
-        <p><em>(Phase 3 content coming soon.)</em></p>
       </div>
     </section>
 
@@ -120,8 +119,8 @@
       const toolbox = document.getElementById("toolbox");
       const nextControl = document.getElementById("vc-next");
 
-      // Dev-only test shortcut: reload with ?skipTo=phase1 | celebrate | phase2 to jump
-      // straight past earlier phases instead of replaying drag + 5 form fields by hand.
+      // Dev-only test shortcut: reload with ?skipTo=phase1 | celebrate | phase2 | finale | thinking
+      // to jump straight past earlier phases instead of replaying drag + 5 form fields by hand.
       const skipTarget = parseSkipTarget(location.search);
       const autopilot = skipTarget
         ? attachAutopilot({ toolbox, nextControl, target: skipTarget })
