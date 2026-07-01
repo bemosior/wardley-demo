@@ -47,13 +47,13 @@ export const BUILD_BUY_OUTSOURCE_QUESTION: Question = {
     },
     {
       id: "buy",
-      label: "It's becoming standard enough that vendors already do this well — buy a product.",
-      annotation: "Buy",
+      label: "It's becoming common enough that vendors already do this well — buy a product or plan to compete.",
+      annotation: "Buy (or Compete)",
     },
     {
       id: "outsource",
-      label: "It's commodity now — there's no advantage in doing this ourselves — outsource it.",
-      annotation: "Outsource",
+      label: "It's commodity now — there's no advantage in doing this ourselves unless we are already positioned to outlast the competition despite lowering margins  — outsource it.",
+      annotation: "Outsource (or Outlast)",
     },
   ],
 };
@@ -71,10 +71,10 @@ export const QUESTION_POOL: Question[] = [
   },
   {
     id: "differentiation",
-    prompt: "Does this still set you apart from competitors, or is it table stakes now?",
+    prompt: "Does this set you apart from competitors, or is it table stakes?",
     options: [
-      { id: "differentiates", label: "It still differentiates us — worth the extra investment.", annotation: "Still differentiates" },
-      { id: "table-stakes", label: "It's table stakes now — everyone needs it, nobody wins because of it.", annotation: "Table stakes" },
+      { id: "differentiates", label: "It differentiates us.", annotation: "Differentiates" },
+      { id: "table-stakes", label: "It's table stakes — everyone needs it, nobody wins because of it.", annotation: "Table stakes" },
     ],
   },
   {
