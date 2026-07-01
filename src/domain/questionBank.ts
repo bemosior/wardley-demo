@@ -62,11 +62,12 @@ export const BUILD_BUY_OUTSOURCE_QUESTION: Question = {
 export const QUESTION_POOL: Question[] = [
   {
     id: "inertia",
-    prompt: "Is anything — habit, a contract, sunk cost — keeping this from moving to match its real stage?",
+    prompt: "Is anything — habit, a contract, sunk cost — holding us back from adapting to change here?",
     options: [
-      { id: "no-inertia", label: "No — we'd change how we treat it as soon as its stage changed.", annotation: "No inertia" },
-      { id: "org-habit", label: "Yes — the team is used to treating it a certain way, regardless of stage.", annotation: "Watch: org habit" },
+      { id: "no-inertia", label: "No — we adapt readily, without extra friction.", annotation: "No inertia" },
+      { id: "org-habit", label: "Yes — the team keeps treating it the way it's always been treated, regardless of where it's actually moved.", annotation: "Watch: org habit" },
       { id: "contract-lockin", label: "Yes — an existing contract or vendor relationship locks in how we treat it.", annotation: "Watch: contract lock-in" },
+      { id: "sunk-cost-inertia", label: "Yes — we've invested too much in the old approach to change course now, even though the situation has moved on.", annotation: "Watch: sunk-cost inertia" },
     ],
   },
   {
