@@ -1,4 +1,4 @@
-import { EVOLUTION_STAGES } from "../domain/evolution";
+import { EVOLUTION_STAGES, type EvolutionStage } from "../domain/evolution";
 import type { DemoConnection, DemoNode } from "./types";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -127,7 +127,7 @@ export function genesisCenterX(viewBoxWidth: number): number {
 }
 
 /** which evolution-stage band an x-coordinate falls into, for a given viewBox width — shares the same band math as `createMapBackdrop` so a dragged node's live position always agrees with the band it visibly sits on. Clamps to the first/last stage for out-of-range x. */
-export function stageLabelAt(x: number, viewBoxWidth: number): string {
+export function stageLabelAt(x: number, viewBoxWidth: number): EvolutionStage {
   const bandWidth = viewBoxWidth / EVOLUTION_STAGES.length;
   const index = Math.min(EVOLUTION_STAGES.length - 1, Math.max(0, Math.floor(x / bandWidth)));
   return EVOLUTION_STAGES[index];
@@ -253,32 +253,64 @@ export function createConnectionLine(
   return line;
 }
 
-const FLOW_PARTICLE_COUNT = 1;
 const FLOW_PARTICLE_RADIUS = 4.5;
 
+interface FlowStageParams {
+  /** how many particles ride the line at once */
+  count: number;
+  /** seconds for one particle to travel the full line */
+  durationS: number;
+  /** genesis/custom-built read as unreliable supply: irregular, stalling motion rather than a smooth glide */
+  sputter: boolean;
+}
+
 /**
- * decorative traveling-spark overlay for a completed connection: returns FLOW_PARTICLE_COUNT
- * <circle> elements, each riding the from->to line via CSS offset-path. Only ever created
- * post-snap, so final x/y is always correct. Caller is responsible for animation-delay
- * (depends on both connection index and particle index) and DOM insertion order.
+ * particle count/speed/regularity per evolution stage — the concrete form of the "genesis
+ * sputters, commodity flows smoothly" requirement: a component early on the axis is supplied by
+ * one slow, stalling particle; a commodity is supplied by a dense, fast, evenly-spaced stream.
+ */
+const FLOW_STAGE_PARAMS: Record<EvolutionStage, FlowStageParams> = {
+  Genesis: { count: 1, durationS: 3.4, sputter: true },
+  "Custom-Built": { count: 2, durationS: 2.6, sputter: true },
+  Product: { count: 3, durationS: 1.9, sputter: false },
+  Commodity: { count: 4, durationS: 1.3, sputter: false },
+};
+
+/** the look of a line whose `to` node hasn't been placed on the evolution axis yet (Phase 0/1, before Phase 2's map exists) — unchanged from the fixed count/duration this module used before stage-dependent flow existed */
+const DEFAULT_FLOW_PARAMS: FlowStageParams = { count: 1, durationS: 2.0, sputter: false };
+
+/** exposed so callers (e.g. `WardleyDemo`) can derive an even inter-particle stagger from the same count/duration `createFlowParticles` used. Omit `stage` for a node not yet placed on the evolution axis. */
+export function flowParamsForStage(stage?: EvolutionStage): FlowStageParams {
+  return stage ? FLOW_STAGE_PARAMS[stage] : DEFAULT_FLOW_PARAMS;
+}
+
+/**
+ * decorative traveling-spark overlay for a completed connection: returns one <circle> per
+ * `flowParamsForStage(stage).count`, each riding the from->to line via CSS offset-path. Only
+ * ever created post-snap, so final x/y is always correct. Caller is responsible for
+ * animation-delay (depends on both connection index and particle index) and DOM insertion order.
  */
 export function createFlowParticles(
   conn: DemoConnection,
   nodesById: Map<string, DemoNode>,
+  stage?: EvolutionStage,
 ): SVGCircleElement[] {
   const from = nodesById.get(conn.from)!;
   const to = nodesById.get(conn.to)!;
   const path = `path("M ${from.x},${from.y} L ${to.x},${to.y}")`;
   const radius = conn.from === "user" && conn.to === "need" ? FLOW_PARTICLE_RADIUS * 1.5 : FLOW_PARTICLE_RADIUS;
+  const { count, durationS, sputter } = flowParamsForStage(stage);
 
   const particles: SVGCircleElement[] = [];
-  for (let i = 0; i < FLOW_PARTICLE_COUNT; i++) {
+  for (let i = 0; i < count; i++) {
     const circle = document.createElementNS(SVG_NS, "circle") as SVGCircleElement;
     circle.classList.add("wd-flow-particle");
+    if (sputter) circle.classList.add("wd-flow-particle--sputter");
     circle.dataset.from = conn.from;
     circle.dataset.to = conn.to;
     circle.setAttribute("r", String(radius));
     circle.style.offsetPath = path;
+    circle.style.animationDuration = `${durationS}s`;
     particles.push(circle);
   }
   return particles;

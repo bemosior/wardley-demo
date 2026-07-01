@@ -181,7 +181,16 @@ const CSS = `
   filter: drop-shadow(0 0 3px rgba(126, 200, 255, 0.9));
   pointer-events: none;
   offset-rotate: 0deg;
-  animation: wd-particle-travel 2.0s linear infinite;
+  animation-name: wd-particle-travel;
+  /* overridden per-particle via inline style, driven by evolution stage — see flowParamsForStage in render.ts */
+  animation-duration: 2.0s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/** genesis/custom-built: same travel keyframes, but stepped rather than eased — reads as an unreliable, stalling supply instead of a smooth glide */
+.wd-flow-particle--sputter {
+  animation-timing-function: steps(14, jump-end);
 }
 
 @keyframes wd-particle-travel {

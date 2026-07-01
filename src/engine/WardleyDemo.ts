@@ -1,4 +1,5 @@
 import type { DemoConfig, DemoConnection, DemoNode } from "./types";
+import type { EvolutionStage } from "../domain/evolution";
 import {
   createConnectionLine,
   createFireworkShells,
@@ -10,6 +11,7 @@ import {
   createSvgRoot,
   createTargetMarker,
   fitNodeLabel,
+  flowParamsForStage,
   genesisCenterX,
   NODE_RADIUS,
   stageLabelAt,
@@ -25,7 +27,7 @@ export interface MountOptions {
 
 export interface EvolutionDragStepOptions {
   /** fires with the current stage label ("Genesis"/"Custom-Built"/"Product"/"Commodity") on every pointer move */
-  onPositionChange?: (stageLabel: string) => void;
+  onPositionChange?: (stageLabel: EvolutionStage) => void;
   /** fires once, the first time the node is dropped — the signal a caller uses to reveal a confirm control */
   onReadyToConfirm?: () => void;
 }
@@ -45,11 +47,6 @@ export interface DragStepOptions {
   rootNodeId?: string;
   onComplete?: () => void;
 }
-
-const FLOW_PARTICLE_COUNT = 3;
-const FLOW_PARTICLE_CYCLE = 1.8;
-/** seconds between each particle's start within one line's travel cycle, for an evenly spaced trailing chain */
-const FLOW_PARTICLE_STAGGER = FLOW_PARTICLE_CYCLE / FLOW_PARTICLE_COUNT;
 
 /** negative delay so the User<-Need segment stays permanently phase-shifted behind the lead (Dependency<-Need) segments */
 const FLOW_STAGGER_DELAY = -0.47;
@@ -86,6 +83,8 @@ export class WardleyDemo {
   private nodesById = new Map<string, DemoNode>();
   private nodeGroups = new Map<string, SVGGElement>();
   private lines: { conn: DemoConnection; el: SVGLineElement }[] = [];
+  /** a node's confirmed evolution stage, driving how the flow particles on its lines look (see `spawnParticlesForLine`); unset until it's actually placed on the evolution axis, which falls back to Phase 0/1's fixed pre-evolution look */
+  private nodeStage = new Map<string, EvolutionStage>();
 
   /** the in-flight drag step, if any — lets `skipDrag()` complete it without a real pointer gesture */
   private pendingDrag?: {
@@ -368,7 +367,7 @@ export class WardleyDemo {
       (point) => setNodePosition(nodeGroup, connectedLines, point),
       () => {
         node.x = to.x;
-        this.respawnFlowParticlesTouching(nodeId);
+        this.setNodeStage(nodeId, "Genesis");
       },
     );
   }
@@ -410,6 +409,7 @@ export class WardleyDemo {
         handle.confirm((x) => {
           nodeGroup.classList.remove("wd-node--draggable");
           nodeGroup.classList.remove("wd-node--beckon");
+          this.setNodeStage(nodeId, stageLabelAt(x, this.viewBox.width));
           this.respawnFlowParticlesTouching(nodeId);
           this.fireworkAt(x, node.y);
         });
@@ -451,15 +451,29 @@ export class WardleyDemo {
     this.lines.forEach((_, index) => this.spawnParticlesForLine(index));
   }
 
+  /**
+   * a line's flow is driven by the evolution stage of its `to` node (the "supplier" end) —
+   * unset (Phase 0/1's fixed look) until that node has actually been placed on the evolution axis.
+   */
   private spawnParticlesForLine(index: number): void {
     const { conn } = this.lines[index];
+    const stage = this.nodeStage.get(conn.to);
+    const { count, durationS } = flowParamsForStage(stage);
+    const stagger = durationS / count;
     const segmentDelay = index === 0 ? FLOW_STAGGER_DELAY : 0;
-    const particles = createFlowParticles(conn, this.nodesById);
+    const particles = createFlowParticles(conn, this.nodesById, stage);
     particles.forEach((particle, i) => {
-      const delay = segmentDelay + -(i * FLOW_PARTICLE_STAGGER);
+      const delay = segmentDelay + -(i * stagger);
       particle.style.animationDelay = `${delay}s`;
       this.particleLayer.appendChild(particle);
     });
+  }
+
+  /** records a node's confirmed evolution stage and, only if it actually changed, respawns the flow particles on every line touching it so they pick up the new count/speed/regularity */
+  private setNodeStage(nodeId: string, stage: EvolutionStage): void {
+    if (this.nodeStage.get(nodeId) === stage) return;
+    this.nodeStage.set(nodeId, stage);
+    this.respawnFlowParticlesTouching(nodeId);
   }
 
   /** removes and respawns the flow particles for every line touching `nodeId`, against its current (post-move) position — keeps the particles riding the line instead of a stale pre-move path */

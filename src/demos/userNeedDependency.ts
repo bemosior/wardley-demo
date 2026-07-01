@@ -4,7 +4,6 @@ import { showNextLink } from "../engine/nextLink";
 import { createValueChain, relabelCapability, relabelNeed, relabelUser } from "../domain/valueChain";
 import { layoutValueChain, type ValueChainLayoutOptions } from "../application/valueChainLayout";
 import { NEED_CATALOG } from "../domain/needCatalog";
-import type { EvolutionStage } from "../domain/evolution";
 import type { DemoConfig } from "../engine/types";
 
 const seedValueChain = createValueChain({
@@ -31,7 +30,7 @@ function awaitEvolutionConfirm(
 ): Promise<void> {
   return new Promise<void>((resolve) => {
     const evolutionStep = demo.runEvolutionDragStep(nodeId, {
-      onPositionChange: (stageLabel) => panel.updateInstrumentPanel(stageLabel as EvolutionStage),
+      onPositionChange: (stageLabel) => panel.updateInstrumentPanel(stageLabel),
       onReadyToConfirm: () => {
         panel.confirmPlacement().then(() => {
           evolutionStep.confirm();
