@@ -1,3 +1,4 @@
+import { EVOLUTION_STAGES } from "../domain/evolution";
 import type { DemoConnection, DemoNode } from "./types";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -111,7 +112,6 @@ export function fitNodeLabel(label: SVGTextElement, radius: number = NODE_RADIUS
   }
 }
 
-const EVOLUTION_STAGES = ["Genesis", "Custom-Built", "Product", "Commodity"] as const;
 const EVOLUTION_STAGE_CLASSES = ["genesis", "custom", "product", "commodity"] as const;
 const BACKDROP_LABEL_INSET = 14;
 
