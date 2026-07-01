@@ -205,5 +205,5 @@ This phase is entirely downstream of Phase 2's map backdrop existing (annotation
 
 ## Finale
 
-- [ ] Big celebration.
-- [ ] "Next" control scrolls the visitor to the next section of the page.
+- [x] Big celebration.
+- [x] "Next" control scrolls the visitor to the next section of the page.

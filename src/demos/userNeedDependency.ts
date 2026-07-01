@@ -22,7 +22,12 @@ const seedValueChain = createValueChain({
  * the same interaction after it. The "Confirm placement" link renders inside the Toolbox
  * (`panel.confirmPlacement`), not the host's `nextControl`, since it's hidden during Phase 2.
  */
-function awaitEvolutionConfirm(demo: WardleyDemo, panel: Panel, nodeId: string): Promise<void> {
+function awaitEvolutionConfirm(
+  demo: WardleyDemo,
+  panel: Panel,
+  nodeId: string,
+  onEvolutionStep?: ValueChainScenarioOptions["onEvolutionStep"],
+): Promise<void> {
   return new Promise<void>((resolve) => {
     const evolutionStep = demo.runEvolutionDragStep(nodeId, {
       onPositionChange: (stageLabel) => panel.updatePlaceholderSubheading(stageLabel),
@@ -33,6 +38,7 @@ function awaitEvolutionConfirm(demo: WardleyDemo, panel: Panel, nodeId: string):
         });
       },
     });
+    onEvolutionStep?.(evolutionStep);
   });
 }
 
@@ -59,6 +65,10 @@ export interface ValueChainScenarioOptions {
   onMount?: (demo: WardleyDemo) => void;
   /** fires once the visitor clicks the second "Next" link (shown in `nextControl` after the celebration) — the signal that Phase 2 starts */
   onEvolutionReady?: () => void;
+  /** fires once the visitor clicks "What's next →" at the very end of Phase 2, after all nodes are placed on the evolution axis and the finale celebration runs */
+  onComplete?: () => void;
+  /** called with each EvolutionDragHandle as Phase 2 drag steps begin — lets autopilot call skipDrag() to bypass real pointer events */
+  onEvolutionStep?: (handle: import("../engine/WardleyDemo").EvolutionDragHandle) => void;
   /** override the generated layout's geometry; ignored if `config` is supplied */
   layout?: ValueChainLayoutOptions;
   /**
@@ -168,17 +178,20 @@ export async function runValueChainScenario(options: ValueChainScenarioOptions):
   setTimeout(() => demo.slideToGenesis(chain.need.id), MAP_CAPTION_FADE_MS);
   demo.beckonNode(chain.need.id);
 
-  await awaitEvolutionConfirm(demo, panel, chain.need.id);
+  await awaitEvolutionConfirm(demo, panel, chain.need.id, options.onEvolutionStep);
 
   for (const capability of chain.capabilities) {
     panel.showPlaceholder(capability.label, "Genesis");
     demo.beckonNode(capability.id);
     demo.slideToGenesis(capability.id);
-    await awaitEvolutionConfirm(demo, panel, capability.id);
+    await awaitEvolutionConfirm(demo, panel, capability.id, options.onEvolutionStep);
   }
 
-  panel.showEmpty();
-  demo.celebrateAll();
+  panel.showPlaceholder("Wardley Map", "All placed!");
+  demo.celebrateAll(2);
+
+  await panel.confirmPlacement("What's next →");
+  options.onComplete?.();
 
   return demo;
 }

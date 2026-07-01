@@ -33,6 +33,8 @@ export interface EvolutionDragStepOptions {
 export interface EvolutionDragHandle {
   /** locks in the node's current position, fires its "placement confirmed" feedback, and stops further dragging */
   confirm: () => void;
+  /** triggers onReadyToConfirm without a real drag — for autopilot/testing */
+  skipDrag: () => void;
 }
 
 export interface DragStepOptions {
@@ -412,22 +414,27 @@ export class WardleyDemo {
           this.fireworkAt(x, node.y);
         });
       },
+      skipDrag: () => handle.skipDrag(),
     };
   }
 
   /**
-   * non-drag celebration: fires one firework burst per node, top to bottom. For
-   * flows (e.g. Phase 1's form sequence) that finish without a drag/snap to
-   * anchor the celebration to. The lines/charging/flow-particle animations from
-   * Phase 0's `celebrateSnap` are already running continuously by this point
+   * non-drag celebration: fires one firework burst per node, top to bottom, repeated `rounds`
+   * times (default 1). For flows (e.g. Phase 1's form sequence, or the Phase 2 finale) that
+   * finish without a drag/snap to anchor the celebration to. The lines/charging/flow-particle
+   * animations from Phase 0's `celebrateSnap` are already running continuously by this point
    * and aren't re-triggered here.
    */
-  celebrateAll(): void {
+  celebrateAll(rounds = 1): void {
     this.activateLines();
     const orderedNodes = [...this.nodesById.values()].sort((a, b) => a.y - b.y);
-    orderedNodes.forEach((node, i) => {
-      setTimeout(() => this.fireworkAt(node.x, node.y), i * FIREWORK_BURST_STAGGER_MS);
-    });
+    const roundDuration = orderedNodes.length * FIREWORK_BURST_STAGGER_MS + 300;
+    for (let r = 0; r < rounds; r++) {
+      const offset = r * roundDuration;
+      orderedNodes.forEach((node, i) => {
+        setTimeout(() => this.fireworkAt(node.x, node.y), offset + i * FIREWORK_BURST_STAGGER_MS);
+      });
+    }
   }
 
   private activateLines(): void {

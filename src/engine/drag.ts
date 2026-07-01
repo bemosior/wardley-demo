@@ -153,6 +153,8 @@ export interface AxisDragOptions {
 export interface AxisDragHandle {
   /** locks the node's x to wherever it currently sits, detaches the drag listener, and calls `onConfirm` with that x */
   confirm: (onConfirm: (x: number) => void) => void;
+  /** fires `onFirstRelease` immediately without a real drag — for autopilot/testing */
+  skipDrag: () => void;
 }
 
 /**
@@ -210,6 +212,12 @@ export function attachAxisDrag(options: AxisDragOptions): AxisDragHandle {
       nodeGroup.removeEventListener("pointerdown", onPointerDown as EventListener);
       node.x = currentX;
       onConfirm(currentX);
+    },
+    skipDrag() {
+      if (!hasReleasedOnce) {
+        hasReleasedOnce = true;
+        onFirstRelease?.();
+      }
     },
   };
 }

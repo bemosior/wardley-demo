@@ -1,4 +1,4 @@
-import type { WardleyDemo } from "../engine/WardleyDemo";
+import type { WardleyDemo, EvolutionDragHandle } from "../engine/WardleyDemo";
 import { NEED_CATALOG } from "../domain/needCatalog";
 
 /**
@@ -6,10 +6,11 @@ import { NEED_CATALOG } from "../domain/needCatalog";
  * `phase1`: skip the Phase 0 drag, land at the start of Phase 1's form.
  * `celebrate`: also auto-fill all 5 form fields, land right after the Phase 1 celebration.
  * `phase2`: also click past the Phase 1->2 gate, land at today's frontier.
+ * `finale`: also auto-click every Phase 2 confirm-placement link, land at the finale celebration.
  */
-export type SkipTarget = "phase1" | "celebrate" | "phase2";
+export type SkipTarget = "phase1" | "celebrate" | "phase2" | "finale";
 
-const SKIP_TARGETS: SkipTarget[] = ["phase1", "celebrate", "phase2"];
+const SKIP_TARGETS: SkipTarget[] = ["phase1", "celebrate", "phase2", "finale"];
 
 /** reads `?skipTo=` from a query string (e.g. `location.search`); null if absent/unrecognized */
 export function parseSkipTarget(search: string): SkipTarget | null {
@@ -28,6 +29,8 @@ export interface AutopilotOptions {
 export interface Autopilot {
   /** pass as `ValueChainScenarioOptions.onMount` — completes the Phase 0 drag instantly */
   onMount: (demo: WardleyDemo) => void;
+  /** pass as `ValueChainScenarioOptions.onEvolutionStep` — skips Phase 2 drag steps for `finale` */
+  onEvolutionStep?: (handle: EvolutionDragHandle) => void;
 }
 
 const DEFAULT_TEXT_ANSWER = "Test";
@@ -66,22 +69,29 @@ export function attachAutopilot({ toolbox, nextControl, target }: AutopilotOptio
       link.click();
       if (target === "phase1") disconnect();
     } else if (nextLinkCount === 2) {
-      if (target === "phase2") link.click();
-      disconnect();
+      if (target === "phase2" || target === "finale") link.click();
+      if (target !== "finale") disconnect();
     }
   });
 
   const toolboxObserver = new MutationObserver(() => {
     const form = toolbox.querySelector<HTMLFormElement>(".wd-panel-form");
     if (form) fillAndSubmit(form);
+    if (target === "finale") {
+      // auto-click "Confirm placement" links that appear inside the toolbox during Phase 2,
+      // but not the finale's "What's next →" which should be left for the visitor
+      const link = toolbox.querySelector<HTMLAnchorElement>(".wd-next-link");
+      if (link && link.textContent?.trim() === "Confirm placement") link.click();
+    }
   });
 
   nextObserver.observe(nextControl, { childList: true });
   if (target !== "phase1") {
-    toolboxObserver.observe(toolbox, { childList: true });
+    toolboxObserver.observe(toolbox, { childList: true, subtree: true });
   }
 
   return {
     onMount: (demo) => demo.skipDrag(),
+    onEvolutionStep: target === "finale" ? (handle: EvolutionDragHandle) => handle.skipDrag() : undefined,
   };
 }
