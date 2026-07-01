@@ -329,8 +329,14 @@ describe("runValueChainScenario", () => {
 
     await confirmEvolutionStep(canvas, toolbox, "dependency-3", 150, 157);
 
+    expect(toolbox.querySelector(".wd-panel-placeholder-heading")!.textContent).toBe("Wardley Map");
+    expect(resolved).toBe(false);
+
+    clickConfirm(toolbox);
+    await flush();
+
     expect(resolved).toBe(true);
-    expect(toolbox.querySelector(".wd-panel-placeholder-heading")).toBeNull();
+    expect(toolbox.querySelector(".wd-panel-placeholder-heading")!.textContent).toBe("Wardley Map");
     expect(toolbox.querySelector(".wd-panel-content")).not.toBeNull();
     vi.useRealTimers();
   });
