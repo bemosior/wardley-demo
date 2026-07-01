@@ -79,12 +79,12 @@ export const QUESTION_POOL: Question[] = [
     ],
   },
   {
-    id: "attention",
-    prompt: "Are you spending management attention on this in proportion to its stage — a lot for Genesis, almost none for Commodity?",
+    id: "method",
+    prompt: "Given its evolutionary stage, are you using the right methods for building and running this component?",
     options: [
-      { id: "proportionate", label: "Yes — attention roughly matches the uncertainty at this stage.", annotation: "Attention: proportionate" },
-      { id: "over-attended", label: "No — we're still fussing over it long after it stopped needing that.", annotation: "Watch: over-attended" },
-      { id: "under-attended", label: "No — it's too early for how little attention it's getting.", annotation: "Watch: under-attended" },
+      { id: "matched", label: "Yes — agile iteration if early evolution, lean continuous improvement if in the middle, six sigma towards control if late evolution.", annotation: "Methods: appropriate" },
+      { id: "stuck-in-agile", label: "No — we're still treating it as an open-ended experiment long after it became standard practice.", annotation: "Watch: misapplied agile methods" },
+      { id: "premature-six-sigma", label: "No — we're already forcing rigid, standardized process onto something that's still genuinely uncertain.", annotation: "Watch: misapplied six sigma methods" },
     ],
   },
 ];
