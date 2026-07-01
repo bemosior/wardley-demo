@@ -14,16 +14,16 @@ export type EvolutionStage = (typeof EVOLUTION_STAGES)[number];
  */
 const CHARACTERISTICS: Record<Exclude<ComponentKind, "user">, Record<EvolutionStage, string>> = {
   need: {
-    Genesis: "Rare, poorly understood, still being discovered — visitors don't yet know they want this.",
+    Genesis: "Rare, poorly understood, still being discovered — people don't yet know they want this.",
     "Custom-Built": "Recognized by early adopters, but still bespoke — no two people expect it the same way.",
     Product: "Increasingly familiar — most people recognize the need and expect it to be met well.",
     Commodity: "Universally expected, assumed by default — its absence would be surprising.",
   },
   capability: {
     Genesis: "Uncertain, experimental, high failure rate — best built in-house by whoever is closest to the unknown.",
-    "Custom-Built": "Emerging best practice, still one-off per organization — worth building, not yet worth buying.",
-    Product: "Increasingly standardized, differentiated by features — a reasonable build-or-buy decision.",
-    Commodity: "Standardized, well understood, widely available — outsource or buy rather than build.",
+    "Custom-Built": "Emerging best practice, still one-off per organization, seen as a competitive advantage — have to build, can't buy off the shelf.",
+    Product: "Increasingly common, differentiated by features — advantage is in implementation.",
+    Commodity: "Standardized, well understood, widespread in its market, important but invisible — high volume, reducing margin.",
   },
 };
 
